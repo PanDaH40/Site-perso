@@ -5,7 +5,7 @@
   <title>Tableau de bord</title>
 </head>
 <body>
-  <h1 id="welcomeMsg" data-username="<?= Welcome ($user['nom']) ?>"></h1>
+  <h1 id="welcomeMsg" data-username="<?= htmlspecialchars($user['nom']) ?>"></h1>
 
   <button id="logoutBtn">Déconnexion</button>
   

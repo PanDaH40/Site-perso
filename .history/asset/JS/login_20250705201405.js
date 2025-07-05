@@ -13,7 +13,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
   formData.append('email', email);
   formData.append('password', password);
 
-  fetch('asset/PHP/connection.php', {
+  fetch('./asset/PHP/connection.php', {
     method: 'POST',
     body: formData
   })
@@ -21,11 +21,11 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
   .then(data => {
     alert(data.message);
     if (data.success) {
-      window.location.href = './asset/PHP/dashboard.php';
+      window.location.href = 'dashboard.php';
     }
   })
   .catch(err => {
     console.error('Erreur fetch:', err);
     alert("Erreur lors de la connexion.");
-  });
+  });hj
 });

@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'prenom' => $user['prenom'],
                 'email' => $user['email']
             ];
-            header('Location: ./asset/PHP/dashboard.php');
+            header('Location: dashboard.php');
             exit;
         } else {
             header('Location: login.php?erreur=1');

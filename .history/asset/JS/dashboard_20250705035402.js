@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", function () {
     logoutBtn.addEventListener("click", function () {
       fetch('logout.php')
         .then(() => {
-          window.location.href = 'asset/PHP/login.php'; // redirige après déconnexion
+          window.location.href = 'login.php'; // redirige après déconnexion
         })
         .catch(() => {
           alert("Erreur lors de la déconnexion.");

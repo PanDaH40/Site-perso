@@ -31,7 +31,6 @@ document.addEventListener("DOMContentLoaded", function () {
       .then(data => {
         alert(data.message);
         if (data.success) {
-          console.log(window.location.href)
           window.location.href = "./asset/PHP/dashboard.php";
         }
       })

@@ -2,7 +2,7 @@
 session_start();
 header('Content-Type: application/json');
 
-require __DIR__ . '/login.php'; /*  __DIR__ garantit que le chemin est basé sur le répertoire du fichier courant, ce qui est plus robuste et évite des erreurs de chemin relatif. */
+require __DIR__ . '/connection.php'; /*  __DIR__ garantit que le chemin est basé sur le répertoire du fichier courant, ce qui est plus robuste et évite des erreurs de chemin relatif. */
 
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

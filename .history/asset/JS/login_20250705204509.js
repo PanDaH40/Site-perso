@@ -13,7 +13,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
   formData.append('email', email);
   formData.append('password', password);
 
-  fetch('asset/PHP/connection.php', {
+  fetch('./asset/PHP/connection.php', {
     method: 'POST',
     body: formData
   })

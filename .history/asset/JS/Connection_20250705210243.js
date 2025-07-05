@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
         alert(data.message);
         if (data.success) {
           console.log(window.location.href)
-          window.location.href = "./asset/PHP/dashboard.php";
+          window.location.href = "/asset/PHP/dashboard.php";
         }
       })
       .catch(error => {

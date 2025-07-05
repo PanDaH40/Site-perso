@@ -22,16 +22,15 @@ document.addEventListener("DOMContentLoaded", function () {
     formData.append("email", email);
     formData.append("password", password);
 
-    fetch("asset/PHP/connection.php", {
+    fetch("./asset/PHP/connection.php", {
       method: "POST",
-      body: formData,
-      credentials: "same-origin"
+      body: formData
+      credentials "same-origin"  // Important pour que la session soit transmise
     })
       .then(response => response.json())
       .then(data => {
         alert(data.message);
         if (data.success) {
-          console.log(window.location.href)
           window.location.href = "./asset/PHP/dashboard.php";
         }
       })
