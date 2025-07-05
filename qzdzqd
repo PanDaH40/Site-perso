@@ -1,0 +1,81 @@
+<?php
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo "Méthode non autorisée.";
+    exit;
+}
+
+$host = "localhost";
+$dbname = "ecoride";
+$username = "root";
+$password = "";
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    if (isset($_POST['email']) && isset($_POST['password'])) {
+        $email = $_POST['email'];
+        $motdepasse = $_POST['password'];
+
+        $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user && password_verify($motdepasse, $user['motdepasse'])) {
+            echo "Utilisateur connecté avec succès !";
+        } else {
+            echo "Email ou mot de passe incorrect.";
+        }
+    } else {
+        echo "Champs manquants.";
+    }
+} catch (PDOException $e) {
+    echo "Erreur : " . $e->getMessage();
+}
+?> et  <?php
+// Autoriser uniquement la méthode POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo "Méthode non autorisée.";
+    exit;
+}
+
+// Connexion à la base de données
+$host = "localhost";
+$dbname = "ecoride";
+$username = "root";
+$password = "";
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Vérification des champs
+    if (!isset($_POST['email']) || !isset($_POST['password'])) {
+        echo "Données manquantes.";
+        exit;
+    }
+
+    // Récupération et sécurisation des données
+    $email = htmlspecialchars($_POST['email']);
+    $motdepasse = password_hash($_POST['password'], PASSWORD_DEFAULT);
+
+    // Vérifie si l'email existe déjà
+    $check = $pdo->prepare("SELECT id FROM utilisateurs WHERE email = ?");
+    $check->execute([$email]);
+
+    if ($check->rowCount() > 0) {
+        echo "Cet email est déjà utilisé.";
+    } else {
+        // Insertion en base de données
+        $stmt = $pdo->prepare("INSERT INTO utilisateurs (email, motdepasse) VALUES (?, ?)");
+        $stmt->execute([$email, $motdepasse]);
+
+        echo "Inscription réussie avec succès !";
+    }
+
+} catch (PDOException $e) {
+    echo "Erreur de base de données : " . $e->getMessage();
+}
+?>
