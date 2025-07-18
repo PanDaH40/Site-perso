@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="./asset/CSS/PageCovoiturage.css"/>
+  <title>Covoiturage</title>
+</head>
+<body>
+  <div class="container py-5">
+    <h1 class="text-center mb-4">🚗 Liste des trajets disponibles</h1>
+
+    <nav class="mb-4">
+      <a href="dashboard.html"     class="btn bg-warning btn-sm m-2">Dashboard</a>
+      <a href="Profile.html"       class="btn bg-warning btn-sm m-2">Profil</a>
+      <a href="PageDaccueil.html"  class="btn bg-warning btn-sm m-2">Accueil</a>
+      <a href="PageDeContact.html" class="btn bg-warning btn-sm m-2">Contact</a>
+      <a href="dashboard.html"     class="btn bg-warning btn-sm m-2">Message</a>
+    </nav>
+
+    <!-- Recherche -->
+    <div class="card p-4 mb-5">
+  <h5 class="mb-3">Rechercher un trajet</h5>
+  <form id="searchForm" autocomplete="off">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label for="departure" class="form-label">Départ</label>
+        <input type="text" id="departure" class="form-control" placeholder="Ville, adresse, gare…" autocomplete="off">
+        <small class="form-text text-muted">Ex : Bayonne, Gare SNCF, arrêt Tram…</small>
+      </div>
+      <div class="col-md-3">
+        <label for="arrival" class="form-label">Arrivée</label>
+        <input type="text" id="arrival" class="form-control" placeholder="Ville, adresse, campus…" autocomplete="off">
+        <small class="form-text text-muted">Ex : Pau Université, 5 rue du Port…</small>
+      </div>
+      <div class="col-md-2">
+        <label for="dateSearch" class="form-label">Date</label>
+        <input type="date" id="dateSearch" class="form-control">
+      </div>
+      <div class="col-md-2">
+        <label for="passengers" class="form-label">Nb passagers</label>
+        <input type="number" id="passengers" class="form-control" min="1" placeholder="Nb">
+      </div>
+      <div class="col-md-2 d-grid">
+        <button type="submit" class="btn bg-warning">Rechercher</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+
+    <!-- Ajout de trajet -->
+    <div id="formAjoutContainer" class="card p-4 mb-5">
+      <h5 class="mb-3">Ajouter un trajet</h5>
+      <form id="trajetForm">
+        <div class="row mb-3">
+  <div class="col">
+    <input type="text" id="depart" class="form-control" placeholder="Départ (adresse exacte, lieu-dit…)" required>
+    <small class="form-text text-muted">Ex: Gare de Dax, 25 rue Victor Hugo, parking Auchan…</small>
+  </div>
+  <div class="col">
+    <input type="text" id="arrivee" class="form-control" placeholder="Arrivée (adresse exacte, lieu-dit…)" required>
+    <small class="form-text text-muted">Ex: Lycée Louis Barthou, Place de la Liberté…</small>
+  </div>
+</div>
+        <div class="row mb-3">
+          <div class="col"><input type="date" id="date"     class="form-control" required></div>
+          <div class="col"><input type="time" id="heure"    class="form-control" required></div>
+          <div class="col"><input type="number" id="places" class="form-control" min="1" placeholder="Places" required></div>
+          <div class="col"><input type="number" id="prix"   class="form-control" min="0" step="0.01" placeholder="Prix (€)" required></div>
+        </div>
+        <button type="submit" class="btn bg-warning w-100">Ajouter</button>
+        <div class="text-end mt-2">
+          <button type="reset" class="btn btn-outline-secondary btn-warning">Réinitialiser</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Grille des trajets -->
+    <div class="row" id="liste-trajets"></div>
+  </div>
+
+  <!-- Modal de réservation -->
+
+  <div class="modal fade" id="reservationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Réserver ce trajet</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="modalBody"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-success" id="btnConfirmerReservation">Confirmer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="./asset/JS/Covoiturage.js"></script>
+</body>
+</html>

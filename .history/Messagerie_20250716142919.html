@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Messagerie</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="./asset/CSS/Messagerie.css">
+</head>
+<body>
+  
+  <div class="container py-5">
+    <h1 class="mb-4">Ma messagerie</h1>
+    <div class="row">
+      <!-- Liste des conversations ou des destinataires -->
+      <div class="col-md-4">
+        <h5>Destinataires</h5>
+        <select id="messageDestinataire" class="form-select mb-3">
+          <!-- Options chargées dynamiquement -->
+        </select>
+        <button id="refreshConversations" class="btn btn-outline-secondary btn-sm mb-2">Actualiser</button>
+        <ul id="conversationsList" class="list-group"></ul>
+      </div>
+
+      <!-- Zone d'échange -->
+      <div class="col-md-8">
+        <h5>Conversation</h5>
+        <div id="messageThread" class="border rounded p-3 mb-3" style="height:300px; overflow-y:auto; background:#fafafa;">
+          <!-- Messages dynamiques ici -->
+        </div>
+        <div class="input-group">
+          <textarea id="messageTexte" class="form-control" rows="2" placeholder="Écrivez votre message..."></textarea>
+          <button id="sendMessageBtn" class="btn btn-success">Envoyer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="./asset/JS/messagerie.js"></script>
+</body>
+</html>
