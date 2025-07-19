@@ -1,0 +1,22 @@
+/* Petite vignette circulaire */
+.avatar-preview {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #ddd;
+}
+
+.alert.position-fixed {
+  transition: opacity 0.5s ease;
+}
+
+.parallax {
+     background-image: url(http://localhost/TPCovoiturage/asset/Images/sphere-avec-des-arbres.jpg);
+     height: 250px;
+     background-attachment: fixed;
+     background-position: center;
+     background-repeat: no-repeat;
+     background-size: cover;
+}

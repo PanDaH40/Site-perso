@@ -1,0 +1,36 @@
+USE covoiturage_db;
+
+CREATE TABLE utilisateurs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(191) UNIQUE NOT NULL,
+  mot_de_passe VARCHAR(255) NOT NULL,
+  nom VARCHAR(100) DEFAULT NULL,
+  date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE inscrits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100),
+    prenom VARCHAR(100),
+    age INT,
+    telephone VARCHAR(20),
+    email VARCHAR(100) UNIQUE,
+    mot_de_passe TEXT
+);
+
+ALTER TABLE utilisateurs 
+ADD COLUMN prenom VARCHAR(255),
+ADD COLUMN age INT,
+ADD COLUMN telephone VARCHAR(20);
+
+CREATE TABLE IF NOT EXISTS inscrits (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nom VARCHAR(255) NOT NULL,
+  prenom VARCHAR(255) NOT NULL,
+  age INT NOT NULL,
+  telephone VARCHAR(20) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  mot_de_passe VARCHAR(255) NOT NULL
+);
+
+

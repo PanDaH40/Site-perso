@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./asset/CSS/PageCovoiturage.css" />
+    <title>Covoiturage</title>
+  </head>
+  <body>
+    <div class="container py-5">
+      <h1 class="text-center mb-4">🚗 Liste des trajets disponibles</h1>
+
+      <a href="dashboard.html" class="btn bg-warning btn-sm m-2">Dashboard</a>
+      <a href="PageDaccueil.html" class="btn bg-warning btn-sm m-2"> Accueil </a>
+      <a href="PageDeContact.html" class="btn bg-warning btn-sm m-2"> Contact </a>
+      <a href="dashboard.html" class="btn bg-warning btn-sm m-2"> Message </a>
+      
+
+      <!-- Section de recherche -->
+      <div class="card p-4 mb-4">
+        <h5 class="mb-3">Rechercher un trajet</h5>
+        <form id="searchForm">
+          <div class="row mb-3">
+            <div class="col">
+              <input
+                type="text"
+                class="form-control"
+                id="departure"
+                placeholder="Départ"
+              />
+            </div>
+            <div class="col">
+              <input
+                type="text"
+                class="form-control"
+                id="arrival"
+                placeholder="Arrivée"
+              />
+            </div>
+            <div class="col">
+              <input type="date" class="form-control" id="dateSearch" />
+            </div>
+            <div class="col-auto">
+              <input
+                type="number"
+                class="form-control"
+                id="passengers"
+                min="1"
+                placeholder="Nombre de passagers"
+              />
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn bg-warning">Rechercher</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Section d’ajout de trajet -->
+      <div id="formAjoutContainer" class="card p-4 mb-5">
+        <h5 class="mb-3">Ajouter un trajet</h5>
+        <form id="trajetForm">
+          <div class="row mb-3">
+            <div class="col">
+              <input
+                type="text"
+                class="form-control"
+                id="depart"
+                name="depart"
+                placeholder="Départ"
+                required
+              />
+            </div>
+            <div class="col">
+              <input
+                type="text"
+                class="form-control"
+                id="arrivee"
+                name="arrivee"
+                placeholder="Arrivée"
+                required
+              />
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col">
+              <input
+                type="date"
+                class="form-control"
+                id="date"
+                name="date"
+                required
+              />
+            </div>
+            <div class="col">
+              <input
+                type="time"
+                class="form-control"
+                id="heure"
+                name="heure"
+                required
+              />
+            </div>
+            <div class="col">
+              <input
+                type="number"
+                class="form-control"
+                id="places"
+                name="places"
+                min="1"
+                required
+                placeholder="Nombre de places"
+              />
+            </div>
+          </div>
+          <button type="submit" class="btn bg-warning w-100">Ajouter</button>
+          <div class="text-end">
+            <button
+              type="reset"
+              class="btn btn-outline-secondary btn-warning mt-2"
+            >
+              Réinitialiser
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Liste des trajets -->
+      <div class="row" id="liste-trajets">
+
+        <form id="trajetForm" class="row g-2">
+              <div class="col-md-4">
+                <input type="number" class="form-control" id="places" name="places" min="1" placeholder="Places" required>
+              </div>
+              <div class="col-md-3">
+                <input type="number" class="form-control" id="places" name="places" min="1" required placeholder="Places">
+              </div>
+              <div class="col-md-3">
+                <input type="number" step="0.01" class="form-control" id="prix" name="prix" min="0" required placeholder="Prix (€)">
+              </div>
+      </div>
+    </div>
+
+    <!-- Modal de réservation -->
+    <div
+      class="modal fade"
+      id="reservationModal"
+      tabindex="-1"
+      aria-labelledby="reservationModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="reservationModalLabel">
+              Réserver ce trajet
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fermer"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div id="modalBody">
+              <!-- Infos du trajet sélectionné -->
+            </div>
+            <div class="mt-3">
+              <label for="nbPlaces" class="form-label"
+                >Nombre de places à réserver :</label
+              >
+              <input
+                type="number"
+                id="nbPlaces"
+                class="form-control"
+                min="1"
+                value="1"
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              class="btn btn-success"
+              id="btnConfirmerReservation"
+              data-trajet-id=""
+            >
+              Confirmer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./asset/JS/Covoiturage.js"></script>
+  </body>
+</html>

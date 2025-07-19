@@ -1,0 +1,120 @@
+USE covoiturage_db;
+
+CREATE TABLE IF NOT EXISTS inscrits (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nom VARCHAR(255) NOT NULL,
+  prenom VARCHAR(255) NOT NULL,
+  age INT NOT NULL,
+  telephone VARCHAR(20) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  mot_de_passe VARCHAR(255) NOT NULL
+);
+
+
+CREATE TABLE trajets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  conducteur_id INT NOT NULL, -- FK vers utilisateurs
+  date DATE NOT NULL,
+  depart VARCHAR(100) NOT NULL,
+  arrivee VARCHAR(100) NOT NULL,
+  places INT NOT NULL,
+  statut ENUM('Confirmé', 'En attente', 'Annulé') DEFAULT 'En attente',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (conducteur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE reservations (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  trajet_id INT NOT NULL,    -- FK vers trajets
+  passager_id INT NOT NULL,  -- FK vers utilisateurs
+  places_reservees INT DEFAULT 1,
+  statut ENUM('Confirmé', 'Annulé') DEFAULT 'Confirmé',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (trajet_id) REFERENCES trajets(id) ON DELETE CASCADE,
+  FOREIGN KEY (passager_id) REFERENCES utilisateurs(id) ON DELETE CASCADE
+);
+
+ALTER TABLE trajets ADD COLUMN heure TIME NOT NULL DEFAULT '00:00:00';
+
+CREATE TABLE messages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  sender_id   INT NOT NULL,
+  receiver_id INT NOT NULL,
+  content     TEXT NOT NULL,
+  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+  is_read     TINYINT(1) DEFAULT 0,
+  FOREIGN KEY (sender_id)   REFERENCES inscrits(id) ON DELETE CASCADE,
+  FOREIGN KEY (receiver_id) REFERENCES inscrits(id) ON DELETE CASCADE
+) ENGINE=InnoDB CHARSET=utf8;
+
+SHOW TABLES;
+SHOW TABLES LIKE 'inscrits';
+SHOW TABLE STATUS
+WHERE Name = 'inscrits'\G
+
+ALTER TABLE inscrits ENGINE=InnoDB;
+
+ALTER TABLE trajets ADD COLUMN prix DECIMAL(6,2) NOT NULL DEFAULT 0.00;
+
+SELECT COUNT(*) AS nb_disponibles
+  FROM trajets
+ WHERE statut = 'disponible';
+
+-- Passe toutes les lignes dont le statut est NULL ou vide à 'disponible'
+UPDATE trajets
+  SET statut = 'disponible'
+WHERE statut IS NULL
+   OR statut = '';
+
+SELECT id, statut
+  FROM trajets
+ LIMIT 10;
+
+UPDATE trajets
+  SET statut = 'disponible';
+
+UPDATE trajets
+   SET statut = NULL
+ WHERE statut = 'disponible';
+
+ CREATE TABLE `conducteurs` (
+  `inscrit_id`    INT                  NOT NULL,
+  `voiture`       VARCHAR(100)         NOT NULL,
+  `carburant`     ENUM('electric','essence','gazole') NOT NULL,
+  `animaux`       TINYINT(1) DEFAULT 0, 
+  `fumeurs`       TINYINT(1) DEFAULT 0,
+  PRIMARY KEY (`inscrit_id`),
+  CONSTRAINT `fk_cond_inscrit`
+    FOREIGN KEY (`inscrit_id`) REFERENCES `inscrits`(`id`)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `passagers` (
+  `inscrit_id`    INT        NOT NULL,
+  `preferences`   TEXT       NULL,  -- ex : « non fumeur, animaux…, etc. »
+  PRIMARY KEY (`inscrit_id`),
+  CONSTRAINT `fk_pass_inscrit`
+    FOREIGN KEY (`inscrit_id`) REFERENCES `inscrits`(`id`)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+ALTER TABLE `conducteurs`
+  ADD COLUMN `prenom` VARCHAR(50) NOT NULL AFTER `inscrit_id`,
+  ADD COLUMN `nom`    VARCHAR(50) NOT NULL AFTER `prenom`;
+
+  ALTER TABLE `passagers`
+  ADD COLUMN `prenom` VARCHAR(50) NOT NULL AFTER `inscrit_id`,
+  ADD COLUMN `nom`    VARCHAR(50) NOT NULL AFTER `prenom`;
+
+  CREATE TRIGGER trg_conducteurs_ins BEFORE INSERT ON conducteurs
+FOR EACH ROW
+BEGIN
+  DECLARE p VARCHAR(50);
+  DECLARE n VARCHAR(50);
+  SELECT prenom, nom INTO p, n FROM inscrits WHERE id = NEW.inscrit_id;
+  SET NEW.prenom = p;
+  SET NEW.nom    = n;
+END;

@@ -1,0 +1,51 @@
+.titre{
+    text-shadow: 5px 5px 3px rgba(0, 0, 0, 0.7);
+    color: rgb(255, 187, 0);
+    font-size: 500%;
+}
+
+
+    /* Bouton se connecter */
+
+.custom-btn-connecter:hover{
+    color: greenyellow;
+    border: 2px solid greenyellow; 
+}
+
+.custom-btn-covoiturage:hover{
+    color: greenyellow;
+    border: 2px solid greenyellow; 
+}
+
+.custom-btn-contact:hover{
+    color: greenyellow;
+    border: 2px solid greenyellow; 
+}
+
+
+/* parallax  */
+.parallax {
+    background-image: url(./asset/Images/sphere-avec-des-arbres.jpg);
+    height: 300px;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.parallax2 {
+    background-image: url(./asset/Images/sphere-avec-des-arbres.jpg);
+    height: 650px;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+  /* .content {
+    height: 400=0px;
+    background-color: white;
+    padding: rem;
+} */
+
+   

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Covoiturage</title>
+  <script defer src="asset/JS/Covoiturage.js"></script>
+</head>
+<body>
+
+  <h1>Proposer un trajet</h1>
+  <form id="form-trajet">
+    <label for="depart">Départ :</label>
+    <input type="text" id="depart" required />
+
+    <label for="arrivee">Arrivée :</label>
+    <input type="text" id="arrivee" required />
+
+    <label for="date">Date :</label>
+    <input type="date" id="date" required />
+
+    <label for="heure">Heure :</label>
+    <input type="time" id="heure" required />
+
+    <label for="places">Nombre de places :</label>
+    <input type="number" id="places" min="1" required />
+
+    <button type="submit">Ajouter le trajet</button>
+  </form>
+
+  <h2>Trajets disponibles</h2>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Départ</th>
+        <th>Arrivée</th>
+        <th>Date</th>
+        <th>Heure</th>
+        <th>Places</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="liste-trajets">
+      <!-- Trajets chargés dynamiquement -->
+    </tbody>
+  </table>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+/* Messagerie.css */
+
+/* Conteneur général */
+.container {
+  max-width: 960px;
+}
+
+/* Liste des conversations */
+#conversationsList {
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 0.25rem;
+  padding-left: 0;
+}
+
+#conversationsList li {
+  list-style: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.15s ease-in-out;
+}
+
+#conversationsList li:hover {
+  background-color: #f8f9fa;
+}
+
+#conversationsList li.active {
+  background-color: #0d6efd;
+  color: white;
+}
+
+#conversationsList li.active .badge {
+  background-color: #ffc107; /* badge color when active */
+  color: black;
+}
+
+/* Badges */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.25em 0.5em;
+}
+
+/* Zone de messages */
+#messageThread {
+  background-color: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 0.25rem;
+  padding: 1rem;
+  max-height: 500px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+
+/* Message style */
+#messageThread .badge {
+  padding: 0.5em 0.75em;
+  font-size: 0.9rem;
+  border-radius: 1rem;
+  max-width: 75%;
+  display: inline-block;
+  word-wrap: break-word;
+}
+
+#messageThread .text-end .badge {
+  background-color: #198754; /* Bootstrap success */
+  color: white;
+}
+
+#messageThread .text-start .badge {
+  background-color: #6c757d; /* Bootstrap secondary */
+  color: white;
+}
+
+/* Notification cloche */
+#notif-messages {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  font-size: 1.8rem;
+  color: #212529;
+  z-index: 1000;
+}
+
+#notif-messages:hover {
+  color: #0d6efd;
+  text-decoration: none;
+}
+
+/* Badge notification cloche */
+#badge-msg {
+  font-size: 0.7rem;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0;
+  text-align: center;
+}
+
+/* Boutons */
+#sendMessageBtn {
+  min-width: 100px;
+}
+
+#refreshConversations {
+  width: 100%;
+}
+
+/* Textarea */
+#messageTexte {
+  resize: none;
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+  #messageThread {
+    max-height: 300px;
+  }
+  #conversationsList {
+    max-height: 300px;
+  }
+}

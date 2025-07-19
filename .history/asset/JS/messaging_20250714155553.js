@@ -1,0 +1,62 @@
+document.addEventListener('DOMContentLoaded', () => {
+  const userList   = document.getElementById('userList');
+  const chatWindow = document.getElementById('chatWindow');
+  const msgInput   = document.getElementById('messageInput');
+  const sendBtn    = document.getElementById('sendBtn');
+  let currentWith  = null;
+
+  // 1) Charger la liste des conversations
+  fetch('./asset/PHP/get_conversations.php', { credentials:'same-origin' })
+    .then(r=>r.json()).then(data => {
+      data.conversations.forEach(u => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item list-group-item-action';
+        li.textContent = `${u.prenom} ${u.nom}`;
+        li.dataset.id = u.id;
+        li.addEventListener('click', () => selectUser(li));
+        userList.append(li);
+      });
+    });
+
+  function selectUser(li) {
+    // Mise en forme de l’élément actif
+    userList.querySelectorAll('li').forEach(el=>el.classList.remove('active'));
+    li.classList.add('active');
+    currentWith = li.dataset.id;
+    loadChat(currentWith);
+  }
+
+  // 2) Charger l’historique
+  function loadChat(withId) {
+    fetch(`./asset/PHP/get_messages.php?with=${withId}`, { credentials:'same-origin' })
+      .then(r=>r.json()).then(data => {
+        chatWindow.innerHTML = '';
+        data.messages.forEach(m => {
+          const div = document.createElement('div');
+          div.className = m.sender_id == withId ? 'text-start mb-2' : 'text-end mb-2';
+          div.innerHTML = `<small>${m.sender_prenom} :</small> ${m.content}`;
+          chatWindow.append(div);
+        });
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+      });
+  }
+
+  // 3) Envoyer un message
+  sendBtn.addEventListener('click', () => {
+    if (!currentWith) return alert('Sélectionne un destinataire.');
+    const content = msgInput.value.trim();
+    if (!content) return;
+    fetch('./asset/PHP/send_message.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ receiver_id: currentWith, content })
+    })
+    .then(r=>r.json()).then(res => {
+      if (res.success) {
+        msgInput.value = '';
+        loadChat(currentWith);
+      } else alert(res.error);
+    });
+  });
+});
