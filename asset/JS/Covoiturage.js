@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const basePath = '/TPCovoiturage/asset/PHP/';
+  const basePath = 'asset/PHP/';
 
   // --- Message initial : demander à l’utilisateur de remplir le formulaire ---
   function afficherAucunTrajetInitial() {

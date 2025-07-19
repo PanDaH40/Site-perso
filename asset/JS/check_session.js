@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  fetch("./asset/PHP/check_session.php", { credentials: "same-origin" })
+  fetch("asset/PHP/check_session.php", { credentials: "same-origin" })
     .then(res => res.json())
     .then(data => {
       if (data.connected) {

@@ -11,7 +11,8 @@ body {
 
 .parallax {
      margin-bottom: 30vh;
-     background-image: url(http://localhost/TPCovoiturage/asset/Images/sphere-avec-des-arbres.jpg);
+     background-image: url(./asset/Images/sphere-avec-des-arbres.jpg);
+     /* Utilisation de l'image de fond */
      height: 250px;
      background-attachment: fixed;
      background-position: center;

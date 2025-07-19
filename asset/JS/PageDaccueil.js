@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const basePath = '/TPCovoiturage/asset/PHP/';
+  const basePath = 'asset/PHP/';
   const userStatus = document.getElementById("userStatus");
   const logoutBtn = document.getElementById("logoutBtn");
   const loginBtn = document.getElementById("loginBtn");
