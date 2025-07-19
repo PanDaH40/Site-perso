@@ -31,7 +31,7 @@ if (!in_array($nouvelEtat, $etats_valides, true)) {
 }
 
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname=covoiturage_db;charset=utf8', 'root', '', [
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password), [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
 

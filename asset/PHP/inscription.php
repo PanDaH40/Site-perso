@@ -1,4 +1,14 @@
 <?php
+
+require_once __DIR__ . '/../../config.php';
+
+
+// contrôle d’accès
+if (($_GET['key'] ?? '') !== SITE_ACCESS_KEY) {
+  header('HTTP/1.1 403 Forbidden');
+  exit('Accès restreint.');
+}
+
 file_put_contents(__DIR__ . '/debug.txt', json_encode($_POST));
 
 ini_set('display_errors', 1);

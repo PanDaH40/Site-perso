@@ -1,34 +1,37 @@
 <?php
-require_once 'check_admin.php';
-require_once 'login.php';
+session_start();
+require_once 'check_admin.php';  // Vérifie que l'utilisateur est admin
+require_once 'login.php';        // Connexion PDO dans $pdo
 
-$stmt = $pdo->query("SELECT r.id, r.avis, r.note, i.prenom, i.nom, t.date
-                     FROM reservations r
-                     JOIN inscrits i ON r.passager_id = i.id
-                     JOIN trajets t ON r.trajet_id = t.id
-                     WHERE r.avis IS NOT NULL AND r.avis_valide=0");
-$avis = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Génération d'un token CSRF simple
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+}
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['valider_avis'])) {
-    $id = intval($_POST['id']);
-    $pdo->prepare("UPDATE reservations SET avis_valide=1 WHERE id=?")->execute([$id]);
+// Traitement du POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['csrf_token']) && $_POST['csrf_token'] === $_SESSION['csrf_token']) {
+    $id       = intval($_POST['id']);
+    $action   = $_POST['action'];  // 'valider' ou 'refuser'
+    if ($action === 'valider') {
+        $stmt = $pdo->prepare("UPDATE reservations SET avis_valide = 1 WHERE id = ?");
+    } else {
+        // Marque comme refusé (-1) ou supprime selon vos besoins
+        $stmt = $pdo->prepare("UPDATE reservations SET avis_valide = -1 WHERE id = ?");
+    }
+    $stmt->execute([$id]);
     header("Location: admin_avis_en_attente.php");
     exit;
 }
+
+// Récupération des avis non encore validés (avis_valide = 0)
+$stmt = $pdo->query("
+    SELECT r.id, r.avis, r.note, i.prenom, i.nom, t.date
+      FROM reservations r
+      JOIN inscrits i ON r.passager_id = i.id
+      JOIN trajets t   ON r.trajet_id   = t.id
+     WHERE r.avis IS NOT NULL
+       AND r.avis_valide = 0
+    ORDER BY t.date DESC
+");
+$avis = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
-<!DOCTYPE html>
-<html><body>
-  <h2>Avis en attente de validation</h2>
-  <?php foreach ($avis as $a): ?>
-    <div style="border:1px solid #ccc;margin:8px;padding:8px;">
-      <b><?=htmlspecialchars($a['prenom']." ".$a['nom'])?></b>
-      (<?=htmlspecialchars($a['date'])?>) <br>
-      Note: <?=htmlspecialchars($a['note'])?> / 5 <br>
-      Avis: <?=nl2br(htmlspecialchars($a['avis']))?><br>
-      <form method="post" style="display:inline;">
-        <input type="hidden" name="id" value="<?=$a['id']?>">
-        <button name="valider_avis" value="1">Valider</button>
-      </form>
-    </div>
-  <?php endforeach; ?>
-</body></html>

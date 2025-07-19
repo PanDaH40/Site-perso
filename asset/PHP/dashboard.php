@@ -1,4 +1,14 @@
 <?php
+
+require_once __DIR__ . '/../../config.php';
+
+
+// contrôle d’accès
+if (($_GET['key'] ?? '') !== SITE_ACCESS_KEY) {
+  header('HTTP/1.1 403 Forbidden');
+  exit('Accès restreint.');
+}
+
 session_start();
 if (!isset($_SESSION['user'])) {
     header('Location: /asset/PHP/login.php');

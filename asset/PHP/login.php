@@ -1,9 +1,18 @@
 <?php
 
-$host = "localhost";
-$dbname = "covoiturage_db";
-$username = "root";
-$password = "";
+require_once __DIR__ . '/../../config.php';
+
+
+// contrôle d’accès
+if (($_GET['key'] ?? '') !== SITE_ACCESS_KEY) {
+  header('HTTP/1.1 403 Forbidden');
+  exit('Accès restreint.');
+}
+
+$host = "sql309.infinityfree.com";
+$dbname = "if0_39505571_db_projet";
+$username = "if0_39505571_XXX";
+$password = "qBOSjJTyyq5Trff";
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);

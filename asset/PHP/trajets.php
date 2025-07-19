@@ -1,4 +1,12 @@
 <?php
+require_once __DIR__ . '/../../config.php';
+
+// contrôle d’accès
+if (($_GET['key'] ?? '') !== SITE_ACCESS_KEY) {
+  header('HTTP/1.1 403 Forbidden');
+  exit('Accès restreint.');
+}
+
 // trajets.php (version avec filtres jetons_max, note_min, places_min)
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
@@ -6,12 +14,12 @@ session_start();
 header('Content-Type: application/json');
 
 // Connexion BD
-$host = 'localhost';
-$dbname = 'covoiturage_db';
-$username = 'root';
-$password = '';
+$host = 'sql309.infinityfree.com';
+$dbname = 'if0_39505571_db_projet';
+$username = 'if0_39505571_XXX';
+$password = 'qBOSjJTyyq5Trff';
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password), [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);

@@ -13,12 +13,12 @@ if (!isset($_SESSION['user']['id'])) {
 $userId = $_SESSION['user']['id'];
 
 // Configuration base de données
-$host     = 'localhost';
-$dbname   = 'covoiturage_db';
-$username = 'root';
-$password = '';
+$host = "sql309.infinityfree.com";
+$dbname = "if0_39505571_db_projet";
+$username = "if0_39505571_XXX";
+$password = "qBOSjJTyyq5Trff";
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password), [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);

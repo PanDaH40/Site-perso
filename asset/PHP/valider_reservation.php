@@ -33,11 +33,9 @@ if ($reservationId <= 0 || !in_array($action, ['accepter', 'refuser'], true)) {
 }
 
 try {
-    $pdo = new PDO(
-        'mysql:host=localhost;dbname=covoiturage_db;charset=utf8',
-        'root', '',
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]);
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Erreur base de données']);

@@ -12,7 +12,7 @@ if ($with <= 0) {
     exit;
 }
 
-$pdo = new PDO('mysql:host=localhost;dbname=covoiturage_db;charset=utf8','root','');
+$pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // Marquer les messages reçus comme lus

@@ -109,18 +109,18 @@ ALTER TABLE `conducteurs`
   ADD COLUMN `prenom` VARCHAR(50) NOT NULL AFTER `inscrit_id`,
   ADD COLUMN `nom`    VARCHAR(50) NOT NULL AFTER `prenom`;
 
-  CREATE TRIGGER trg_conducteurs_ins BEFORE INSERT ON conducteurs
-FOR EACH ROW
+ -- CREATE TRIGGER trg_conducteurs_ins BEFORE INSERT ON conducteurs
+ /*FOR EACH ROW
 BEGIN
   DECLARE p VARCHAR(50);
   DECLARE n VARCHAR(50);
   SELECT prenom, nom INTO p, n FROM inscrits WHERE id = NEW.inscrit_id;
   SET NEW.prenom = p;
-  SET NEW.nom    = n;
+  SET NEW.nom    = n; 
 END;
+*/
 
-
-CREATE TRIGGER trg_passagers_ins BEFORE INSERT ON passagers
+/*CREATE TRIGGER trg_passagers_ins BEFORE INSERT ON passagers
 FOR EACH ROW
 BEGIN
   DECLARE p2 VARCHAR(50);
@@ -128,7 +128,7 @@ BEGIN
   SELECT prenom, nom INTO p2, n2 FROM inscrits WHERE id = NEW.inscrit_id;
   SET NEW.prenom = p2;
   SET NEW.nom    = n2;
-END;
+END; */
 //
 DELIMITER ;
 
