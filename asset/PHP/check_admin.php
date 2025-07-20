@@ -7,5 +7,4 @@ if (!isset($_SESSION['user']) || !isset($_SESSION['user']['admin']) || $_SESSION
     exit;
 }
 
-// Ne rien afficher ici si accès OK.
 ?>

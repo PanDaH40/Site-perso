@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 
 $host = "sql309.infinityfree.com";
 $dbname = "if0_39505571_db_projet";
-$username = "if0_39505571_XXX";
+$username = "if0_39505571";
 $password = "qBOSjJTyyq5Trff";
 
 try {

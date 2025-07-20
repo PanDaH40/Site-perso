@@ -15,13 +15,14 @@ $userId = $_SESSION['user']['id'];
 // Configuration base de données
 $host = "sql309.infinityfree.com";
 $dbname = "if0_39505571_db_projet";
-$username = "if0_39505571_XXX";
+$username = "if0_39505571";
 $password = "qBOSjJTyyq5Trff";
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password), [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+]);
+
 } catch (PDOException $e) {
     error_log('Erreur connexion BD: ' . $e->getMessage());
     echo json_encode(['error' => 'Erreur connexion base de données']);

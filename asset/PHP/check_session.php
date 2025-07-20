@@ -1,15 +1,8 @@
 <?php
 
-require_once __DIR__ . '/../../config.php';
-
-// contrôle d’accès
-if (($_GET['key'] ?? '') !== SITE_ACCESS_KEY) {
-  header('HTTP/1.1 403 Forbidden');
-  exit('Accès restreint.');
-}
+header('Content-Type: application/json');
 
 session_start();
-header('Content-Type: application/json');
 
 if (isset($_SESSION['user']['id'])) {
     echo json_encode([
@@ -24,4 +17,5 @@ if (isset($_SESSION['user']['id'])) {
 } else {
     echo json_encode(['connected' => false]);
 }
+
 

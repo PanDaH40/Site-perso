@@ -1,6 +1,5 @@
 <?php 
 session_start();
-require 'login.php'; // Assurez-vous que le fichier de connexion est correctement inclus
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');

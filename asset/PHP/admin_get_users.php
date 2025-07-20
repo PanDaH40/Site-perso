@@ -4,7 +4,7 @@ require_once 'check_admin.php';
 header('Content-Type: application/json');
 
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname=covoiturage_db;charset=utf8','root','');
+    $pdo = new PDO('mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8','if0_39505571','qBOSjJTyyq5Trff');
 } catch (PDOException $e) {
     echo json_encode(['error' => 'Erreur connexion BD']);
     exit;

@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {  
-  // Récupérer l'id utilisateur depuis l'URL ?id=xxx
+  // Récupérer l'id utilisateur depuis l'URL
   const params = new URLSearchParams(window.location.search);
   const userId = params.get('id');
 
@@ -143,8 +143,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Chargement des données utilisateur via AJAX
-  fetch(`asset/PHP/get_public_profile.php?id=${encodeURIComponent(userId)}`)
-    .then(res => res.json())
+  fetch(`asset/PHP/get_public_profile.php?id=${encodeURIComponent(userId)}`, {
+  credentials: 'include'
+})
+.then(res => res.json())
     .then(data => {
       if (data.error) {
         alert(data.error);

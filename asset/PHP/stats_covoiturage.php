@@ -9,9 +9,10 @@ if (!isset($_SESSION['user']['admin']) || $_SESSION['user']['admin'] != 1) {
 }
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    $pdo = new PDO("mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8",
+              "if0_39505571", "qBOSjJTyyq5Trff",
+              [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+
 
     // Dates des 30 derniers jours
     $dates = [];
@@ -49,11 +50,18 @@ try {
 
     // Construire séries alignées sur les dates
     $trajetsParJour = [];
-    $creditsParJour = [];
-    foreach ($dates as $date) {
-        $trajetsParJour[] = isset($rawTrajets[$date]) ? (int)$rawTrajets[$date] : 0;
-        $creditsParJour[] = isset($rawCredits[$date]) ? (float)$rawCredits[$date] : 0;
-    }
+$creditsParJour = [];
+
+foreach ($dates as $date) {
+    $trajetsParJour[] = [
+        'jour' => $date,
+        'nb_trajets' => isset($rawTrajets[$date]) ? (int)$rawTrajets[$date] : 0
+    ];
+    $creditsParJour[] = [
+        'jour' => $date,
+        'credits_gagnes' => isset($rawCredits[$date]) ? (float)$rawCredits[$date] : 0
+    ];
+}
 
     echo json_encode([
         'dates' => $dates,

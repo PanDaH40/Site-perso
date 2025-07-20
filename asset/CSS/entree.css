@@ -1,0 +1,6 @@
+
+    body { font-family: Arial, sans-serif; background: #f2f2f2; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .card { background: white; padding: 2em; border-radius: 1em; box-shadow: 0 2px 8px #0002; }
+    input { padding: 0.7em; width: 100%; margin: 1em 0; font-size: 1.1em; }
+    button { padding: 0.7em 1.5em; font-size: 1.1em; border-radius: .5em; background: #2c5e86; color: white; border: none; cursor: pointer; }
+    .error { color: red; margin-top: 1em; }

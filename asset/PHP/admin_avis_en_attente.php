@@ -1,7 +1,6 @@
 <?php
 session_start();
-require_once 'check_admin.php';  // Vérifie que l'utilisateur est admin
-require_once 'login.php';        // Connexion PDO dans $pdo
+require_once 'login.php';      
 
 // Génération d'un token CSRF simple
 if (!isset($_SESSION['csrf_token'])) {

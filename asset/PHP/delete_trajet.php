@@ -15,7 +15,7 @@ $username = 'root';
 $password = '';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+    $pdo = new PDO("mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8", "if0_39505571", "qBOSjJTyyq5Trff");
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $data = json_decode(file_get_contents('php://input'), true);

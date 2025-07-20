@@ -1,7 +1,6 @@
 <?php
 session_start();
 header('Content-Type: application/json');
-require_once __DIR__ . '/TPCovoiturage/asset/PHP/login.php';
 
 if (!isset($_SESSION['user']['id'])) {
     http_response_code(401);
@@ -24,9 +23,13 @@ if (!$reservationId || !in_array($action, ['valider', 'probleme'], true)) {
 }
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password), [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    $pdo = new PDO(
+    "mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8",
+    "if0_39505571",
+    "qBOSjJTyyq5Trff",
+    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+);
+
 
     // Vérifier réservation et passager
     $stmt = $pdo->prepare("SELECT statut, trajet_id FROM reservations WHERE id = ? AND passager_id = ?");
@@ -73,7 +76,7 @@ try {
             );
             $stmtAvis->execute([
                 $dataCond['conducteur_id'],   // utilisateur_id = conducteur
-                $dataCond['passager_id'],     // auteur_id = passager
+                $dataCond['passager_id'],     
                 $note ?: null,
                 $avis ?: null
             ]);

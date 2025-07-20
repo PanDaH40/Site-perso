@@ -10,7 +10,7 @@ body {
 }
 
 .parallax {
-     background-image: url(./asset/Images/sphere-avec-des-arbres.jpg);
+     background-image: url(../Images/sphere-avec-des-arbres.jpg);
      height: 250px;
      background-attachment: fixed;
      background-position: center;

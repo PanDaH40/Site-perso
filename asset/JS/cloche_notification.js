@@ -1,5 +1,6 @@
 function checkNewMessages() {
-  fetch('asset/PHP/get_messages_recus.php')
+  const accessKey = sessionStorage.getItem('accessKey');
+  fetch(`asset/PHP/get_messages_recus.php?key=${encodeURIComponent(accessKey)}`)
     .then(r => r.json())
     .then(data => {
       const totalNonLus = data.conversations
@@ -12,5 +13,6 @@ function checkNewMessages() {
       }
     });
 }
+
 setInterval(checkNewMessages, 30000);
 document.addEventListener('DOMContentLoaded', checkNewMessages);

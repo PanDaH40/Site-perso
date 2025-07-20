@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Récupère l'id du conducteur depuis l'URL (?id=xxx)
+  // Récupère l'id du conducteur depuis l'URL 
   const params = new URLSearchParams(window.location.search);
   const conducteurId = params.get('id');
 

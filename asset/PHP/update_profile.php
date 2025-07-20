@@ -1,19 +1,24 @@
 <?php
-// update_profile.php
 
 session_start();
 header('Content-Type: application/json');
 
-// 1. Vérifier que l’utilisateur est connecté
+// Paramètres base de données
+$host = 'sql309.infinityfree.com';
+$dbname = 'if0_39505571_db_projet';
+$username = 'if0_39505571';
+$password = 'qBOSjJTyyq5Trff';
+
 if (!isset($_SESSION['user']['id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Utilisateur non connecté']);
     exit;
 }
+
 $userId = (int) $_SESSION['user']['id'];
 
 try {
-    // 2. Connexion PDO
+    // Connexion PDO
     $pdo = new PDO(
         "mysql:host=$host;dbname=$dbname;charset=utf8",
         $username,
@@ -21,7 +26,7 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
-    // 3. Validation minimale des champs (s’ils sont présents, ils ne doivent pas être vides)
+    // Validation minimale des champs
     foreach (['prenom','nom','email'] as $field) {
         if (isset($_POST[$field]) && trim($_POST[$field]) === '') {
             echo json_encode(['error' => "Le champ $field est obligatoire."]);
@@ -29,7 +34,7 @@ try {
         }
     }
 
-    // 4. Si changement de mot de passe demandé, vérifier l’actuel et confirmer le nouveau
+    // Changement de mot de passe (si demandé)
     if (!empty($_POST['newPassword']) || !empty($_POST['newPasswordConfirm'])) {
         if (empty($_POST['passwordConfirm'])) {
             echo json_encode(['error'=>'Le mot de passe actuel est requis.']);
@@ -48,7 +53,7 @@ try {
         }
     }
 
-    // 5. Mise à jour des informations de base
+    // Mise à jour infos de base
     if (isset($_POST['prenom'], $_POST['nom'], $_POST['email'])) {
         $bio = trim($_POST['bio'] ?? '');
         $stmt = $pdo->prepare("
@@ -72,7 +77,7 @@ try {
         $_SESSION['user']['email']  = trim($_POST['email']);
     }
 
-    // 6. Gestion du rôle Conducteur
+    // Gestion rôle Conducteur
     if (!empty($_POST['roleConducteur'])) {
         $stmt = $pdo->prepare("
             INSERT INTO conducteurs (
@@ -109,12 +114,10 @@ try {
             ':dateimmat' => $_POST['date_premiere_immatriculation'] ?: null
         ]);
     } else {
-        // Supprimer la fiche conducteur si décoché
-        $pdo->prepare("DELETE FROM conducteurs WHERE inscrit_id = ?")
-            ->execute([$userId]);
+        $pdo->prepare("DELETE FROM conducteurs WHERE inscrit_id = ?")->execute([$userId]);
     }
 
-    // 7. Gestion du rôle Passager
+    // Gestion rôle Passager
     if (!empty($_POST['rolePassager'])) {
         $prefs = trim($_POST['preferences'] ?? '');
         $stmt = $pdo->prepare("
@@ -129,18 +132,17 @@ try {
             ':prefs'  => $prefs
         ]);
     } else {
-        $pdo->prepare("DELETE FROM passagers WHERE inscrit_id = ?")
-            ->execute([$userId]);
+        $pdo->prepare("DELETE FROM passagers WHERE inscrit_id = ?")->execute([$userId]);
     }
 
-    // 8. Mise à jour du mot de passe
+    // Mise à jour mot de passe si demandé
     if (!empty($_POST['newPassword'])) {
         $newHash = password_hash($_POST['newPassword'], PASSWORD_DEFAULT);
         $pdo->prepare("UPDATE inscrits SET mot_de_passe = ? WHERE id = ?")
             ->execute([$newHash, $userId]);
     }
 
-    // 9. Upload de l’avatar
+    // Upload avatar
     if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
         $uploadDir = __DIR__.'/../asset/uploads/avatars/';
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
@@ -163,13 +165,10 @@ try {
         $pdo->prepare("UPDATE inscrits SET avatar = ? WHERE id = ?")
             ->execute([$avatarUrl, $userId]);
     } else {
-        // Récupérer l’avatar existant
-        $avatarUrl = $pdo
-            ->query("SELECT avatar FROM inscrits WHERE id = $userId")
-            ->fetchColumn();
+        $avatarUrl = $pdo->query("SELECT avatar FROM inscrits WHERE id = $userId")->fetchColumn();
     }
 
-    // 10. Réponse OK
+    // Réponse OK
     echo json_encode([
         'success'   => true,
         'avatarUrl' => $avatarUrl ?? null,

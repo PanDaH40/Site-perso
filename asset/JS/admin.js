@@ -264,6 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
       body: JSON.stringify({ id, role: nvRole })
     })
     .then(data => {
+      console.log("Réponse serveur:", data);
       feedback.textContent = data.success ? "Rôle modifié" : data.error;
       feedback.className = data.success ? "text-success" : "text-danger";
       chargerMembres();

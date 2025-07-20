@@ -17,7 +17,7 @@ if (!$id || $jetons === null || $jetons < 0) {
 }
 
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname=covoiturage_db;charset=utf8','root','');
+    $pdo = new PDO('mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8','if0_39505571','qBOSjJTyyq5Trff');
     $stmt = $pdo->prepare("UPDATE inscrits SET credits = ? WHERE id = ?");
     $stmt->execute([$jetons, $id]);
     echo json_encode(['success' => true, 'nouveau_jetons' => $jetons]);

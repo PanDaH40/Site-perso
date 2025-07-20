@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const $ = id => document.getElementById(id);
 
-  // Champs profil généraux
   const form             = $('profileForm');
   const prenomInput      = $('profilePrenom');
   const nomInput         = $('profileNom');
@@ -20,14 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const defaultAvatar    = 'asset/Images/default_03.png';
   const notifBadge       = $('badge-msg') || $('notif-badge');
 
-  // Champs véhicule
+  // Véhicule fields
   const marqueVehiculeInput = $('profileMarqueVehicule');
   const modeleVehiculeInput = $('profileModeleVehicule');
   const plaqueInput         = $('profilePlaque');
   const couleurInput        = $('profileCouleur');
   const dateImmatInput      = $('profileDateImmat');
 
-  // Modal changement de mot de passe
+  // Modal changement mot de passe
   const btnOpenChangePwdModal = $('btnOpenChangePwdModal');
   const changePasswordModalEl = $('changePasswordModal');
   const changePasswordModal = changePasswordModalEl ? new bootstrap.Modal(changePasswordModalEl) : null;
@@ -37,11 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const confirmNewPasswordModalInput = $('confirmNewPasswordModal');
   const modalErrorMsg = $('modalErrorMsg');
 
-  // Affichage dynamique des sections rôle
+  // Affiche ou cache sections conducteur/passager
   function toggleRoleSections() {
     if (roleCondCheckbox && conducteurFields) {
       conducteurFields.style.display = roleCondCheckbox.checked ? '' : 'none';
-      // Champs véhicule conducteur
       if (marqueVehiculeInput) {
         marqueVehiculeInput.required = !!roleCondCheckbox.checked;
         marqueVehiculeInput.closest('.mb-3').style.display = roleCondCheckbox.checked ? '' : 'none';
@@ -51,9 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
         modeleVehiculeInput.closest('.mb-3').style.display = roleCondCheckbox.checked ? '' : 'none';
       }
       if (carburantSelect) carburantSelect.required = !!roleCondCheckbox.checked;
-      if (plaqueInput)     plaqueInput.required     = !!roleCondCheckbox.checked;
-      if (couleurInput)    couleurInput.required    = !!roleCondCheckbox.checked;
-      if (dateImmatInput)  dateImmatInput.required  = !!roleCondCheckbox.checked;
+      if (plaqueInput) plaqueInput.required = !!roleCondCheckbox.checked;
+      if (couleurInput) couleurInput.required = !!roleCondCheckbox.checked;
+      if (dateImmatInput) dateImmatInput.required = !!roleCondCheckbox.checked;
     }
     if (rolePassCheckbox && passagerFields) {
       passagerFields.style.display = rolePassCheckbox.checked ? '' : 'none';
@@ -91,7 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // Met à jour affichage crédits + notification UI
   function majCreditsUI(nouveauxCredits) {
     const creditsSpan = $('profileCredits');
     if (!creditsSpan) return;
@@ -106,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => notif.remove(), 4000);
   }
 
-  // Charge le profil utilisateur
+  // Charge le profil utilisateur depuis serveur
   async function loadProfile() {
     try {
       const res = await fetch('asset/PHP/get_profile.php', { credentials: 'include' });
@@ -114,8 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
       if (data.error) return alert('Erreur chargement profil : ' + data.error);
 
-      if (roleCondCheckbox)   roleCondCheckbox.checked   = !!data.cond_prenom;
-      if (rolePassCheckbox)   rolePassCheckbox.checked   = !!data.pass_prenom;
+      if (roleCondCheckbox)   roleCondCheckbox.checked   = !!data.roleConducteur;
+      if (rolePassCheckbox)   rolePassCheckbox.checked   = !!data.rolePassager;
+
       toggleRoleSections();
 
       if (prenomInput)        prenomInput.value          = data.prenom || data.user_prenom || '';
@@ -135,9 +133,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dateImmatInput)   dateImmatInput.value  = data.date_premiere_immatriculation || '';
 
       if (avatarPreview) {
-        setAvatar(avatarPreview, data.avatar);
-        avatarPreview.style.display = '';
-      }
+  const urlAvecCacheBuster = data.avatar + '?t=' + new Date().getTime();
+  setAvatar(avatarPreview, urlAvecCacheBuster);
+  avatarPreview.style.display = '';
+}
       if (data.credits !== undefined) {
         majCreditsUI(data.credits);
       }
@@ -150,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Rafraîchir uniquement les crédits (à appeler après validation trajet)
+  // Rafraîchir crédits (externe)
   async function actualiserCredits() {
     try {
       const res = await fetch('asset/PHP/get_profile.php', { credentials: 'include' });
@@ -164,7 +163,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Soumission du formulaire profil
   if (form) {
     form.addEventListener('submit', async e => {
       e.preventDefault();
@@ -225,7 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Ouvre modal changement mot de passe
   if (btnOpenChangePwdModal && changePasswordModal) {
     btnOpenChangePwdModal.addEventListener('click', () => {
       if (currentPasswordInput) currentPasswordInput.value = '';
@@ -239,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Soumission modal changement mot de passe
   if (changePasswordForm) {
     changePasswordForm.addEventListener('submit', async e => {
       e.preventDefault();
@@ -293,10 +289,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Notification messages toutes les 30 secondes
   setInterval(mettreAJourNotificationMessages, 30000);
 
-  // Fonction badge notification messages
+  // Badge notification messages
   function mettreAJourNotificationMessages() {
     if (!notifBadge) return;
-    fetch('asset/PHP/get_messages_recus.php')
+    fetch('asset/PHP/get_messages_recus.php', { credentials: 'include' })
       .then(res => {
         if (!res.ok) throw new Error('Erreur réseau');
         return res.json();
@@ -317,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadProfile();
 
-  // Expose actualiserCredits globalement si besoin (ex: dashboard JS)
   window.actualiserCredits = actualiserCredits;
 });
 
@@ -342,4 +337,3 @@ if (btnDeleteAccount) {
       .catch(() => alert("Erreur technique lors de la suppression du compte."));
   });
 }
-
