@@ -21,16 +21,16 @@ jobs:
 
     env:
       # --- MySQL (Aiven) ---
-      DB_HOST:     ${{ secrets.AIVEN_HOST     || vars.AIVEN_HOST     || 'mysql-2795339d-tpcovoiturage.h.aivencloud.com' }}
+      DB_HOST:     ${{ secrets.AIVEN_HOST }}
       DB_PORT:     18502
-      DB_DATABASE: ${{ secrets.AIVEN_DB       || vars.AIVEN_DB       || 'covoit' }}
-      DB_USERNAME: ${{ secrets.AIVEN_USER     || vars.AIVEN_USER     || 'avnadmin' }}
-      DB_PASSWORD: ${{ secrets.AIVEN_PASS     || secrets.AIVEN_PASSWORD || vars.AIVEN_PASS || vars.AIVEN_PASSWORD || '' }}
+      DB_DATABASE: ${{ secrets.AIVEN_DB }}
+      DB_USERNAME: ${{ secrets.AIVEN_USER }}
+      DB_PASSWORD: ${{ secrets.AIVEN_PASS }}
       DB_SSL_CA:   ${{ github.workspace }}/asset/certs/aiven-ca.pem
 
       # --- Mongo Atlas ---
-      MONGODB_URI: ${{ secrets.MONGODB_URI || vars.MONGODB_URI || '' }}
-      MONGODB_DB:  ${{ secrets.MONGODB_DB  || vars.MONGODB_DB  || 'covoit' }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB:  ${{ secrets.MONGODB_DB }}
 
     steps:
       - name: Debug refs
@@ -100,6 +100,24 @@ jobs:
             echo "::error::DB_PASSWORD is empty"; exit 1
           fi
           echo "DB_PASSWORD raw length: ${#DB_PASSWORD}"
+          # masque la version brute dès maintenant (par précaution)
+          echo "::add-mask::${DB_PASSWORD}"
+
+      - name: Sanitize DB_PASSWORD (strip CR/LF + trim spaces)
+        id: sanitize_pwd
+        shell: bash
+        run: |
+          CLEANED="$(printf '%s' "$DB_PASSWORD" | tr -d '\r\n' | sed -e 's/^[[:space:]]\+//' -e 's/[[:space:]]\+$//')"
+          echo "DB_PASSWORD_CLEAN=$CLEANED" >> $GITHUB_ENV
+          echo "::add-mask::${CLEANED}"
+          echo "len.cleaned=${#CLEANED}"
+
+      - name: Ensure DB_PASSWORD_CLEAN in env
+        run: |
+          if [ -z "${DB_PASSWORD_CLEAN:-}" ]; then
+            echo "::error::DB_PASSWORD_CLEAN is empty after sanitize"; exit 1
+          fi
+          echo "len(DB_PASSWORD_CLEAN)=${#DB_PASSWORD_CLEAN}"
 
       - name: Sanitize DB_DATABASE (strip CR/LF + trim spaces)
         run: |
@@ -107,7 +125,6 @@ jobs:
           echo "DB_DATABASE_CLEAN=$CLEAN_DB" >> $GITHUB_ENV
           echo "DB name: [$CLEAN_DB]"
           echo "len.dbname=${#CLEAN_DB}"
-
 
       - name: Test MySQL TLS connectivity (CLI)
         env:
@@ -124,7 +141,6 @@ jobs:
             --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
             -D "$DB_DATABASE_CLEAN" \
             -e "SELECT DATABASE(); SHOW TABLES;"
-
 
       - name: Setup PHP (with mongodb ext 2.x)
         uses: shivammathur/setup-php@v2
@@ -163,14 +179,13 @@ jobs:
         env:
           DB_HOST: ${{ env.DB_HOST }}
           DB_PORT: ${{ env.DB_PORT }}
-          DB_DATABASE: ${{ env.DB_DATABASE_CLEAN }}   # <= ici
+          DB_DATABASE: ${{ env.DB_DATABASE_CLEAN }}
           DB_USERNAME: ${{ env.DB_USERNAME }}
           DB_PASSWORD: ${{ env.DB_PASSWORD_CLEAN }}
           DB_SSL_CA: ${{ env.DB_SSL_CA }}
           MONGODB_URI: ${{ env.MONGODB_URI }}
           MONGODB_DB:  ${{ env.MONGODB_DB }}
         run: php asset/PHP/mysql_to_mongo_full_dump.php --reset
-
 
       - name: Verify counts in Atlas
         run: |
