@@ -3,3 +3,5 @@ config.php
 test-db.php
 .history
 asset/PHP/test-db.php
+.env
+htdocs
