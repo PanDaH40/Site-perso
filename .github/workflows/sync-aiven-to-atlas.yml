@@ -1,0 +1,87 @@
+name: Sync Aiven MySQL to Mongo Atlas
+
+on:
+  push:
+    branches: [ developpement ]
+  workflow_dispatch: {}
+  schedule:
+    - cron: "*/5 * * * *"  # toutes les 5 minutes
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # MySQL (Aiven)
+      DB_HOST: ${{ secrets.AIVEN_HOST }}
+      DB_PORT: ${{ secrets.AIVEN_PORT }}
+      DB_DATABASE: ${{ secrets.AIVEN_DB }}
+      DB_USERNAME: ${{ secrets.AIVEN_USER }}
+      DB_PASSWORD: ${{ secrets.AIVEN_PASS }}
+      DB_SSL_CA: ${{ github.workspace }}/asset/certs/aiven-ca.pem
+
+      # Mongo Atlas
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB:  ${{ secrets.MONGODB_DB }}
+
+    steps:
+      - name: Checkout developpement
+        uses: actions/checkout@v4
+        with:
+          ref: developpement
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          extensions: pdo_mysql, mongodb
+          coverage: none
+
+      - name: Create Aiven CA file
+        run: |
+          mkdir -p asset/certs
+          printf '%s\n' "${AIVEN_CA_PEM}" > "${DB_SSL_CA}"
+          head -n 2 "${DB_SSL_CA}"
+        env:
+          AIVEN_CA_PEM: ${{ secrets.AIVEN_CA_PEM }}
+
+      - name: Ensure composer.json exists (minimal)
+        run: |
+          if [ ! -f composer.json ]; then
+            cat > composer.json <<'JSON'
+            {
+              "name": "tpcovoiturage/sync",
+              "description": "Sync Aiven MySQL -> MongoDB Atlas",
+              "type": "project",
+              "require": {
+                "php": "^8.1 || ^8.2 || ^8.3",
+                "mongodb/mongodb": "^1.19"
+              }
+            }
+            JSON
+          fi
+
+      - name: Check sync script exists
+        run: test -f asset/PHP/mysql_to_mongo_full_dump.php || (echo "sync script missing at asset/PHP/mysql_to_mongo_full_dump.php" && exit 1)
+
+      - name: Install Composer deps
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # NOTE: --reset = drop/recreate les collections (simple pour commencer).
+      # Pour éviter le reset à chaque run, enlève --reset et passe ton script en upsert.
+      - name: Run sync MySQL -> Mongo
+        run: php asset/PHP/mysql_to_mongo_full_dump.php --reset
+
+      - name: Verify counts in Atlas
+        run: |
+          php -r '
+          require "vendor/autoload.php";
+          $c=new MongoDB\Client(getenv("MONGODB_URI"));
+          $db=$c->selectDatabase(getenv("MONGODB_DB")?: "covoit");
+          foreach($db->listCollections() as $co){
+            $n=$co->getName();
+            $cnt=$db->selectCollection($n)->countDocuments();
+            echo $n,": ",$cnt,PHP_EOL;
+          }'
