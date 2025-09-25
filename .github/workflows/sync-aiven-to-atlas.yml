@@ -48,7 +48,6 @@ jobs:
         with:
           php-version: '8.3'
           tools: composer:v2
-          # Force une 2.x du module mongo; si 2.1.1 existe, tu peux mettre mongodb-2.1.1
           extensions: pdo_mysql, mongodb
           coverage: none
 
@@ -58,21 +57,30 @@ jobs:
           php -m | grep -i mongodb || true
           php -r 'echo "ext-mongodb version: ", phpversion("mongodb")?: "n/a", PHP_EOL;'
 
-            - name: Create Aiven CA file (decode base64)
+      - name: Ensure mysql client (for TLS test)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
+      - name: Create Aiven CA file (decode base64)
         run: |
           mkdir -p asset/certs
           echo "${AIVEN_CA_PEM_B64}" | base64 -d > "${DB_SSL_CA}"
           # Sanity checks
+          echo "CA path: ${DB_SSL_CA}"
           ls -l "${DB_SSL_CA}"
-          wc -c "${DB_SSL_CA}"
-          grep -c "BEGIN CERTIFICATE" "${DB_SSL_CA}" || true
+          echo -n "Bytes: "; wc -c < "${DB_SSL_CA}"
+          echo -n "BEGIN count: "; grep -c "BEGIN CERTIFICATE" "${DB_SSL_CA}" || true
+          echo "----- first line -----"
+          head -n 1 "${DB_SSL_CA}"
+          echo "----- last line ------"
+          tail -n 1 "${DB_SSL_CA}"
         env:
           AIVEN_CA_PEM_B64: ${{ secrets.AIVEN_CA_PEM_B64 }}
 
       - name: Validate CA with openssl
         run: |
-          set -e
-          openssl x509 -in "${DB_SSL_CA}" -noout -subject -issuer -enddate || (echo "CA invalide" && exit 1)
+          openssl x509 -in "${DB_SSL_CA}" -noout -subject -issuer -enddate
 
       - name: Test MySQL TLS connectivity (CLI)
         run: |
@@ -81,13 +89,11 @@ jobs:
             --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
             -e "SELECT CURRENT_USER(), DATABASE(), @@version" "$DB_DATABASE"
 
-
       - name: Ensure composer files exist
         run: |
           test -f composer.json || (echo "composer.json manquant : ajoute-le au repo" && exit 1)
           echo "composer.json:"
           cat composer.json
-          # Le lock doit exister s'il est commité (tu en as un)
           test -f composer.lock && echo "composer.lock présent" || echo "composer.lock absent (ok)"
 
       - name: Install Composer deps (honor lock)
