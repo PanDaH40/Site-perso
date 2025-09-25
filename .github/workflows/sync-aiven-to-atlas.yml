@@ -97,6 +97,13 @@ jobs:
         run: |
           openssl x509 -in "${DB_SSL_CA}" -noout -subject -issuer -enddate
 
+      - name: Check DB_PASSWORD presence and length (masked)
+        run: |
+          if [ -z "${DB_PASSWORD}" ]; then
+            echo "::error::DB_PASSWORD is empty"; exit 1
+          fi
+          echo "DB_PASSWORD length: ${#DB_PASSWORD}"
+
       - name: Validate required MySQL env
         run: |
           for var in DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD DB_SSL_CA; do
@@ -110,12 +117,14 @@ jobs:
           echo "Host=$DB_HOST  Port=$DB_PORT  DB=$DB_DATABASE"
 
       - name: Test MySQL TLS connectivity (CLI)
+        env:
+          MYSQL_PWD: ${{ env.DB_PASSWORD }}
         run: |
           mysql --version
-          mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" \
+          mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
             --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
             -e "SELECT CURRENT_USER(), DATABASE(), @@version" "$DB_DATABASE"
-
+            
       - name: Test PDO MySQL with CA (smoke test)
         run: |
           php -r '
