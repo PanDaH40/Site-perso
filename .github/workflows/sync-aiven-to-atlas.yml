@@ -10,7 +10,7 @@ on:
         required: true
         default: 'developpement'
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/30 * * * *"
 
 jobs:
   sync:
