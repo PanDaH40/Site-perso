@@ -58,13 +58,29 @@ jobs:
           php -m | grep -i mongodb || true
           php -r 'echo "ext-mongodb version: ", phpversion("mongodb")?: "n/a", PHP_EOL;'
 
-      - name: Create Aiven CA file
+            - name: Create Aiven CA file (decode base64)
         run: |
           mkdir -p asset/certs
-          printf '%s\n' "${AIVEN_CA_PEM}" > "${DB_SSL_CA}"
-          head -n 2 "${DB_SSL_CA}"
+          echo "${AIVEN_CA_PEM_B64}" | base64 -d > "${DB_SSL_CA}"
+          # Sanity checks
+          ls -l "${DB_SSL_CA}"
+          wc -c "${DB_SSL_CA}"
+          grep -c "BEGIN CERTIFICATE" "${DB_SSL_CA}" || true
         env:
-          AIVEN_CA_PEM: ${{ secrets.AIVEN_CA_PEM }}
+          AIVEN_CA_PEM_B64: ${{ secrets.AIVEN_CA_PEM_B64 }}
+
+      - name: Validate CA with openssl
+        run: |
+          set -e
+          openssl x509 -in "${DB_SSL_CA}" -noout -subject -issuer -enddate || (echo "CA invalide" && exit 1)
+
+      - name: Test MySQL TLS connectivity (CLI)
+        run: |
+          mysql --version
+          mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" \
+            --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
+            -e "SELECT CURRENT_USER(), DATABASE(), @@version" "$DB_DATABASE"
+
 
       - name: Ensure composer files exist
         run: |
