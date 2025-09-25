@@ -10,27 +10,28 @@ on:
         required: true
         default: 'developpement'
   schedule:
-    - cron: "*/5 * * * *"  # toutes les 5 minutes
+    - cron: "*/5 * * * *"
 
 jobs:
   sync:
-    # Exécute uniquement sur la branche developpement
+    # n'exécute que sur la branche 'developpement' (push/dispatch)
     if: ${{ github.ref_name == 'developpement' || (github.event_name == 'workflow_dispatch' && github.event.inputs.branch == 'developpement') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     env:
-      # MySQL (Aiven)
-      DB_HOST: ${{ secrets.AIVEN_HOST }}
-      DB_PORT: 18502   # <- fixé pour éviter un secret vide
-      DB_DATABASE: ${{ secrets.AIVEN_DB }}
-      DB_USERNAME: ${{ secrets.AIVEN_USER }}
-      DB_PASSWORD: ${{ secrets.AIVEN_PASS }}
-      DB_SSL_CA: ${{ github.workspace }}/asset/certs/aiven-ca.pem
+      # --- MySQL (Aiven) ---
+      # Fallback: secret -> repo variable -> valeur par défaut (host connu, db/user connus)
+      DB_HOST:     ${{ secrets.AIVEN_HOST     || vars.AIVEN_HOST     || 'mysql-2795339d-tpcovoiturage.h.aivencloud.com' }}
+      DB_PORT:     18502
+      DB_DATABASE: ${{ secrets.AIVEN_DB       || vars.AIVEN_DB       || 'covoit' }}
+      DB_USERNAME: ${{ secrets.AIVEN_USER     || vars.AIVEN_USER     || 'avnadmin' }}
+      DB_PASSWORD: ${{ secrets.AIVEN_PASS     || vars.AIVEN_PASS     || '' }}
+      DB_SSL_CA:   ${{ github.workspace }}/asset/certs/aiven-ca.pem
 
-      # Mongo Atlas
-      MONGODB_URI: ${{ secrets.MONGODB_URI }}
-      MONGODB_DB:  ${{ secrets.MONGODB_DB }}
+      # --- Mongo Atlas ---
+      MONGODB_URI: ${{ secrets.MONGODB_URI || vars.MONGODB_URI || '' }}
+      MONGODB_DB:  ${{ secrets.MONGODB_DB  || vars.MONGODB_DB  || 'covoit' }}
 
     steps:
       - name: Debug refs
@@ -43,6 +44,22 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch || 'developpement' }}
+
+      - name: Where am I?
+        run: |
+          echo "Repo: $GITHUB_REPOSITORY"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          echo "Ref: $GITHUB_REF_NAME  Event: $GITHUB_EVENT_NAME"
+
+      - name: Secrets presence (booleans)
+        run: |
+          echo "AIVEN_HOST set?       ${{ secrets.AIVEN_HOST != '' }}"
+          echo "AIVEN_DB set?         ${{ secrets.AIVEN_DB != '' }}"
+          echo "AIVEN_USER set?       ${{ secrets.AIVEN_USER != '' }}"
+          echo "AIVEN_PASS set?       ${{ secrets.AIVEN_PASS != '' }}"
+          echo "AIVEN_CA_PEM_B64 set? ${{ secrets.AIVEN_CA_PEM_B64 != '' }}"
+          echo "MONGODB_URI set?      ${{ secrets.MONGODB_URI != '' }}"
+          echo "MONGODB_DB set?       ${{ secrets.MONGODB_DB != '' }}"
 
       - name: Setup PHP (with mongodb ext 2.x)
         uses: shivammathur/setup-php@v2
@@ -72,7 +89,7 @@ jobs:
           echo -n "Bytes: "; wc -c < "${DB_SSL_CA}"
           echo -n "BEGIN count: "; grep -c "BEGIN CERTIFICATE" "${DB_SSL_CA}" || true
           echo "----- first line -----"; head -n 1 "${DB_SSL_CA}"
-          echo "----- last line  -----"; tail -n 1 "${DB_SSL_CA}"
+          echo "----- last  line -----"; tail -n 1 "${DB_SSL_CA}"
         env:
           AIVEN_CA_PEM_B64: ${{ secrets.AIVEN_CA_PEM_B64 }}
 
@@ -95,14 +112,14 @@ jobs:
       - name: Test MySQL TLS connectivity (CLI)
         run: |
           mysql --version
-          mysql -h "$DB_HOST" -P "${DB_PORT:-18502}" -u "$DB_USERNAME" -p"$DB_PASSWORD" \
+          mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" \
             --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
             -e "SELECT CURRENT_USER(), DATABASE(), @@version" "$DB_DATABASE"
 
       - name: Test PDO MySQL with CA (smoke test)
         run: |
           php -r '
-          $h=getenv("DB_HOST"); $P=getenv("DB_PORT"); $d=getenv("DB_DATABASE");
+          $h=getenv("DB_HOST"); $P=(int)getenv("DB_PORT"); $d=getenv("DB_DATABASE");
           $u=getenv("DB_USERNAME"); $p=getenv("DB_PASSWORD"); $ca=getenv("DB_SSL_CA");
           echo "CA exists? ", (is_file($ca)?"yes":"no"), " size=", (is_file($ca)?filesize($ca):0), PHP_EOL;
           $dsn=sprintf("mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4",$h,$P,$d);
@@ -132,7 +149,9 @@ jobs:
         run: test -f vendor/autoload.php || (echo "vendor/autoload.php manquant" && exit 1)
 
       - name: Check sync script exists
-        run: test -f asset/PHP/mysql_to_mongo_full_dump.php || (echo "sync script missing at asset/PHP/mysql_to_mongo_full_dump.php" && exit 1)
+        run: |
+          ls -la asset/PHP || true
+          test -f asset/PHP/mysql_to_mongo_full_dump.php || (echo "sync script missing at asset/PHP/mysql_to_mongo_full_dump.php" && exit 1)
 
       - name: Run sync MySQL -> Mongo (full reset)
         run: php asset/PHP/mysql_to_mongo_full_dump.php --reset
