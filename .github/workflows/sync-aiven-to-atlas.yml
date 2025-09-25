@@ -101,13 +101,13 @@ jobs:
           fi
           echo "DB_PASSWORD raw length: ${#DB_PASSWORD}"
 
-      - name: Sanitize DB_PASSWORD (strip CR/LF + trim spaces)
-        id: sanitize
-        shell: bash
+      - name: Sanitize DB_DATABASE (strip CR/LF + trim spaces)
         run: |
-          CLEANED="$(printf '%s' "$DB_PASSWORD" | tr -d '\r\n' | sed -e 's/^[[:space:]]\+//' -e 's/[[:space:]]\+$//')"
-          echo "len.cleaned=${#CLEANED}" >> $GITHUB_OUTPUT
-          echo "DB_PASSWORD_CLEAN=$CLEANED" >> $GITHUB_ENV
+          CLEAN_DB="$(printf '%s' "$DB_DATABASE" | tr -d '\r\n' | sed -e 's/^[[:space:]]\+//' -e 's/[[:space:]]\+$//')"
+          echo "DB_DATABASE_CLEAN=$CLEAN_DB" >> $GITHUB_ENV
+          echo "DB name: [$CLEAN_DB]"
+          echo "len.dbname=${#CLEAN_DB}"
+
 
       - name: Test MySQL TLS connectivity (CLI)
         env:
@@ -118,10 +118,13 @@ jobs:
           mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
             --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
             -e "SELECT CURRENT_USER(), @@version"
-          # 2) test avec la base
+
+          # 2) test avec la base (utilise -D plutôt que l'argument positionnel)
           mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
             --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
-            "$DB_DATABASE" -e "SELECT DATABASE(); SHOW TABLES;"
+            -D "$DB_DATABASE_CLEAN" \
+            -e "SELECT DATABASE(); SHOW TABLES;"
+
 
       - name: Setup PHP (with mongodb ext 2.x)
         uses: shivammathur/setup-php@v2
@@ -158,16 +161,16 @@ jobs:
 
       - name: Run sync MySQL -> Mongo (full reset)
         env:
-          # On s'assure que le script voit bien les mêmes variables
           DB_HOST: ${{ env.DB_HOST }}
           DB_PORT: ${{ env.DB_PORT }}
-          DB_DATABASE: ${{ env.DB_DATABASE }}
+          DB_DATABASE: ${{ env.DB_DATABASE_CLEAN }}   # <= ici
           DB_USERNAME: ${{ env.DB_USERNAME }}
           DB_PASSWORD: ${{ env.DB_PASSWORD_CLEAN }}
           DB_SSL_CA: ${{ env.DB_SSL_CA }}
           MONGODB_URI: ${{ env.MONGODB_URI }}
           MONGODB_DB:  ${{ env.MONGODB_DB }}
         run: php asset/PHP/mysql_to_mongo_full_dump.php --reset
+
 
       - name: Verify counts in Atlas
         run: |
