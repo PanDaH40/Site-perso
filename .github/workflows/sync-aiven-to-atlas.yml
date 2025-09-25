@@ -66,6 +66,8 @@ jobs:
           sudo apt-get install -y mysql-client openssl
 
       - name: Create Aiven CA file (decode base64)
+        env:
+          AIVEN_CA_PEM_B64: ${{ secrets.AIVEN_CA_PEM_B64 }}
         run: |
           mkdir -p asset/certs
           echo "${AIVEN_CA_PEM_B64}" | base64 -d > "${DB_SSL_CA}"
@@ -75,8 +77,6 @@ jobs:
           echo -n "BEGIN count: "; grep -c "BEGIN CERTIFICATE" "${DB_SSL_CA}" || true
           echo "----- first line -----"; head -n 1 "${DB_SSL_CA}"
           echo "----- last  line -----"; tail -n 1 "${DB_SSL_CA}"
-        env:
-          AIVEN_CA_PEM_B64: ${{ secrets.AIVEN_CA_PEM_B64 }}
 
       - name: Validate CA with openssl
         run: |
@@ -94,7 +94,7 @@ jobs:
           fi
           echo "Host=$DB_HOST  Port=$DB_PORT  DB=$DB_DATABASE"
 
-            - name: Check DB_PASSWORD presence and raw length (masked)
+      - name: Check DB_PASSWORD presence and raw length (masked)
         run: |
           if [ -z "${DB_PASSWORD}" ]; then
             echo "::error::DB_PASSWORD is empty"; exit 1
@@ -103,11 +103,11 @@ jobs:
 
       - name: Sanitize DB_PASSWORD (strip CR/LF + trim spaces)
         id: sanitize
+        shell: bash
         run: |
           CLEANED="$(printf '%s' "$DB_PASSWORD" | tr -d '\r\n' | sed -e 's/^[[:space:]]\+//' -e 's/[[:space:]]\+$//')"
           echo "len.cleaned=${#CLEANED}" >> $GITHUB_OUTPUT
           echo "DB_PASSWORD_CLEAN=$CLEANED" >> $GITHUB_ENV
-        shell: bash
 
       - name: Test MySQL TLS connectivity (CLI)
         env:
@@ -122,7 +122,6 @@ jobs:
           mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
             --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
             "$DB_DATABASE" -e "SELECT DATABASE(); SHOW TABLES;"
-
 
       - name: Setup PHP (with mongodb ext 2.x)
         uses: shivammathur/setup-php@v2
