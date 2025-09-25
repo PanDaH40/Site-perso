@@ -94,7 +94,7 @@ jobs:
           fi
           echo "Host=$DB_HOST  Port=$DB_PORT  DB=$DB_DATABASE"
 
-      - name: Check DB_PASSWORD presence and raw length (masked)
+            - name: Check DB_PASSWORD presence and raw length (masked)
         run: |
           if [ -z "${DB_PASSWORD}" ]; then
             echo "::error::DB_PASSWORD is empty"; exit 1
@@ -109,17 +109,20 @@ jobs:
           echo "DB_PASSWORD_CLEAN=$CLEANED" >> $GITHUB_ENV
         shell: bash
 
-      - name: Test MySQL TLS connectivity (CLI via stdin)
+      - name: Test MySQL TLS connectivity (CLI)
+        env:
+          MYSQL_PWD: ${{ env.DB_PASSWORD_CLEAN }}
         run: |
           mysql --version
-          # 1) test auth sans base (évite erreur 1049 si DB absente)
-          printf '%s' "$DB_PASSWORD_CLEAN" | mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
-            --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" --password-stdin \
+          # 1) test auth sans base (évite 1049 si DB absente)
+          mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
+            --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
             -e "SELECT CURRENT_USER(), @@version"
-          # 2) test avec la base ciblée
-          printf '%s' "$DB_PASSWORD_CLEAN" | mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
-            --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" --password-stdin \
-            -e "USE $DB_DATABASE; SELECT DATABASE(); SHOW TABLES;"
+          # 2) test avec la base
+          mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
+            --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
+            "$DB_DATABASE" -e "SELECT DATABASE(); SHOW TABLES;"
+
 
       - name: Setup PHP (with mongodb ext 2.x)
         uses: shivammathur/setup-php@v2
