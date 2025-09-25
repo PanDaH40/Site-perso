@@ -14,19 +14,18 @@ on:
 
 jobs:
   sync:
-    # n'exécute que sur la branche 'developpement' (push/dispatch)
+    # Exécute uniquement si on est bien sur "developpement"
     if: ${{ github.ref_name == 'developpement' || (github.event_name == 'workflow_dispatch' && github.event.inputs.branch == 'developpement') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     env:
       # --- MySQL (Aiven) ---
-      # Fallback: secret -> repo variable -> valeur par défaut (host connu, db/user connus)
       DB_HOST:     ${{ secrets.AIVEN_HOST     || vars.AIVEN_HOST     || 'mysql-2795339d-tpcovoiturage.h.aivencloud.com' }}
       DB_PORT:     18502
       DB_DATABASE: ${{ secrets.AIVEN_DB       || vars.AIVEN_DB       || 'covoit' }}
       DB_USERNAME: ${{ secrets.AIVEN_USER     || vars.AIVEN_USER     || 'avnadmin' }}
-      DB_PASSWORD: ${{ secrets.AIVEN_PASS || secrets.AIVEN_PASSWORD || vars.AIVEN_PASS || vars.AIVEN_PASSWORD || '' }}
+      DB_PASSWORD: ${{ secrets.AIVEN_PASS     || secrets.AIVEN_PASSWORD || vars.AIVEN_PASS || vars.AIVEN_PASSWORD || '' }}
       DB_SSL_CA:   ${{ github.workspace }}/asset/certs/aiven-ca.pem
 
       # --- Mongo Atlas ---
@@ -61,24 +60,10 @@ jobs:
           echo "MONGODB_URI set?      ${{ secrets.MONGODB_URI != '' }}"
           echo "MONGODB_DB set?       ${{ secrets.MONGODB_DB != '' }}"
 
-      - name: Setup PHP (with mongodb ext 2.x)
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer:v2
-          extensions: pdo_mysql, mongodb
-          coverage: none
-
-      - name: Show PHP & ext versions
-        run: |
-          php -v
-          php -m | grep -i mongodb || true
-          php -r 'echo "ext-mongodb version: ", phpversion("mongodb")?: "n/a", PHP_EOL;'
-
       - name: Ensure mysql client (for TLS test)
         run: |
           sudo apt-get update
-          sudo apt-get install -y mysql-client
+          sudo apt-get install -y mysql-client openssl
 
       - name: Create Aiven CA file (decode base64)
         run: |
@@ -97,13 +82,6 @@ jobs:
         run: |
           openssl x509 -in "${DB_SSL_CA}" -noout -subject -issuer -enddate
 
-      - name: Check DB_PASSWORD presence and length (masked)
-        run: |
-          if [ -z "${DB_PASSWORD}" ]; then
-            echo "::error::DB_PASSWORD is empty"; exit 1
-          fi
-          echo "DB_PASSWORD length: ${#DB_PASSWORD}"
-
       - name: Validate required MySQL env
         run: |
           for var in DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD DB_SSL_CA; do
@@ -116,6 +94,13 @@ jobs:
           fi
           echo "Host=$DB_HOST  Port=$DB_PORT  DB=$DB_DATABASE"
 
+      - name: Check DB_PASSWORD presence and length (masked)
+        run: |
+          if [ -z "${DB_PASSWORD}" ]; then
+            echo "::error::DB_PASSWORD is empty"; exit 1
+          fi
+          echo "DB_PASSWORD length: ${#DB_PASSWORD}"
+
       - name: Test MySQL TLS connectivity (CLI)
         env:
           MYSQL_PWD: ${{ env.DB_PASSWORD }}
@@ -124,24 +109,20 @@ jobs:
           mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
             --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
             -e "SELECT CURRENT_USER(), DATABASE(), @@version" "$DB_DATABASE"
-            
-      - name: Test PDO MySQL with CA (smoke test)
+
+      - name: Setup PHP (with mongodb ext 2.x)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          extensions: pdo_mysql, mongodb
+          coverage: none
+
+      - name: Show PHP & ext versions
         run: |
-          php -r '
-          $h=getenv("DB_HOST"); $P=(int)getenv("DB_PORT"); $d=getenv("DB_DATABASE");
-          $u=getenv("DB_USERNAME"); $p=getenv("DB_PASSWORD"); $ca=getenv("DB_SSL_CA");
-          echo "CA exists? ", (is_file($ca)?"yes":"no"), " size=", (is_file($ca)?filesize($ca):0), PHP_EOL;
-          $dsn=sprintf("mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4",$h,$P,$d);
-          try {
-            $pdo=new PDO($dsn,$u,$p,[
-              PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
-              PDO::MYSQL_ATTR_SSL_CA=>$ca,
-              PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT=>true,
-            ]);
-            echo "PDO OK\n";
-            $v=$pdo->query("SELECT CURRENT_USER(), DATABASE(), @@version")->fetchAll(PDO::FETCH_NUM);
-            var_export($v);
-          } catch(Throwable $e){ echo "PDO ERROR: ".$e->getMessage().PHP_EOL; exit(1); }'
+          php -v
+          php -m | grep -i mongodb || true
+          php -r 'echo "ext-mongodb version: ", phpversion("mongodb")?: "n/a", PHP_EOL;'
 
       - name: Ensure composer files exist
         run: |
