@@ -3,12 +3,18 @@ name: Sync Aiven MySQL to Mongo Atlas
 on:
   push:
     branches: [ developpement ]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branche à exécuter'
+        required: true
+        default: 'developpement'
   schedule:
-    - cron: "*/30 * * * *"  # toutes les 30 minutes
+    - cron: "*/5 * * * *"  # toutes les 5 minutes
 
 jobs:
   sync:
+    if: ${{ github.ref_name == 'developpement' || (github.event_name == 'workflow_dispatch' && github.event.inputs.branch == 'developpement') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -26,18 +32,31 @@ jobs:
       MONGODB_DB:  ${{ secrets.MONGODB_DB }}
 
     steps:
-      - name: Checkout developpement
+      - name: Debug refs
+        run: |
+          echo "event     : ${{ github.event_name }}"
+          echo "ref_name  : ${{ github.ref_name }}"
+          echo "dispatch  : ${{ github.event.inputs.branch }}"
+
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: developpement
+          ref: ${{ github.event.inputs.branch || 'developpement' }}
 
-      - name: Setup PHP
+      - name: Setup PHP (with mongodb ext 2.x)
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           tools: composer:v2
+          # Force une 2.x du module mongo; si 2.1.1 existe, tu peux mettre mongodb-2.1.1
           extensions: pdo_mysql, mongodb
           coverage: none
+
+      - name: Show PHP & ext versions
+        run: |
+          php -v
+          php -m | grep -i mongodb || true
+          php -r 'echo "ext-mongodb version: ", phpversion("mongodb")?: "n/a", PHP_EOL;'
 
       - name: Create Aiven CA file
         run: |
@@ -47,23 +66,21 @@ jobs:
         env:
           AIVEN_CA_PEM: ${{ secrets.AIVEN_CA_PEM }}
 
-      # 👇 Remplace l’ancienne étape heredoc par ces deux étapes :
-      - name: Init composer.json if missing
+      - name: Ensure composer files exist
         run: |
-          if [ ! -f composer.json ]; then
-            composer init --name="tpcovoiturage/sync" \
-                          --description="Sync Aiven MySQL -> MongoDB Atlas" \
-                          --type=project \
-                          --no-interaction
-          fi
+          test -f composer.json || (echo "composer.json manquant : ajoute-le au repo" && exit 1)
+          echo "composer.json:"
           cat composer.json
+          # Le lock doit exister s'il est commité (tu en as un)
+          test -f composer.lock && echo "composer.lock présent" || echo "composer.lock absent (ok)"
 
-      - name: Require mongodb library
-        run: composer require mongodb/mongodb:^1.19 --no-interaction --no-progress
+      - name: Install Composer deps (honor lock)
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          composer show -i | grep -E '^mongodb/mongodb|^psr/log|polyfill-php85' || true
 
-      # (optionnel) réinstalle, no-op si déjà installé par "require"
-      - name: Install Composer deps
-        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Check autoload
+        run: test -f vendor/autoload.php || (echo "vendor/autoload.php manquant" && exit 1)
 
       - name: Check sync script exists
         run: test -f asset/PHP/mysql_to_mongo_full_dump.php || (echo "sync script missing at asset/PHP/mysql_to_mongo_full_dump.php" && exit 1)
