@@ -1,10 +1,9 @@
 <?php
-
-
 session_start();
+
 header('Content-Type: application/json');
 
-if (isset($_SESSION['user'])) {
+if (isset($_SESSION['user_'])) {
     $prenom = $_SESSION['user']['prenom'] '';
     $nom = $_SESSION['user']['nom'] '';
 

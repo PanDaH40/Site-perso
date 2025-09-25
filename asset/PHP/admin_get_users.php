@@ -1,13 +1,11 @@
 <?php
-// asset/PHP/admin_get_users.php
 require_once 'check_admin.php';
 header('Content-Type: application/json');
 
 try {
-    $pdo = new PDO('mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8','if0_39505571','qBOSjJTyyq5Trff');
-} catch (PDOException $e) {
-    echo json_encode(['error' => 'Erreur connexion BD']);
-    exit;
+    require_once __DIR__ . '/db_conn.php';
+} catch (Throwable $e) {
+    echo json_encode(['error' => 'Erreur connexion BD']); exit;
 }
 
 // Construction du WHERE dynamique

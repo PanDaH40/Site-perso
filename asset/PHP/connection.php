@@ -3,7 +3,7 @@
 session_start();
 header('Content-Type: application/json');
 
-require __DIR__ . '/login.php'; // connexion PDO
+require_once __DIR__ . '/db_conn.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode([

@@ -1,5 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const basePath = 'asset/PHP/';
+  // Base path vers tes scripts PHP
+  const basePath = window.BASE_API_PATH || 'asset/PHP/';
+
+  // 🔀 Active Mongo pour la LISTE (true) ; MySQL sinon (false)
+  const USE_MONGO = true;
+  const LIST_ENDPOINT = USE_MONGO ? 'trajets_mongo.php' : 'trajets.php';
+
+  // ⚠️ On garde MySQL pour la création (trajets_mongo.php ne gère pas POST)
+  const ADD_ENDPOINT  = 'trajets.php';
 
   // --- Message initial : demander à l’utilisateur de remplir le formulaire ---
   function afficherAucunTrajetInitial() {
@@ -23,12 +31,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const places = urlParams.get('places');
 
   if (depart && arrivee && date) {
-    // Pré-remplit le formulaire
     document.getElementById("searchDepart").value = depart;
     document.getElementById("searchArrivee").value = arrivee;
     document.getElementById("searchDate").value = date;
     if (places) document.getElementById("searchPlaces").value = places;
-    // Lance automatiquement la recherche !
     rechercherTrajets();
   }
 
@@ -110,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- Gestion formulaire ajout trajet (conserve) ---
+  // --- Gestion formulaire ajout trajet (reste côté MySQL) ---
   const trajetForm = document.getElementById("trajetForm");
   if (trajetForm) {
     trajetForm.addEventListener("submit", e => {
@@ -144,10 +150,12 @@ document.addEventListener("DOMContentLoaded", () => {
       // Critère écologique (exemple)
       const typeCarburant = (trajet.carburant || "").toLowerCase();
       const estEcologique = ['electric', 'électrique', 'hybride'].includes(typeCarburant);
-
       const badgeEcoHtml = estEcologique
         ? `<span class="badge bg-success float-end" title="Trajet écologique">🍃 Écologique</span>`
         : '';
+
+      // Désactivation si pas d'id MySQL (cas Mongo pur => id===0)
+      const disableReserv = (placesRestantes <= 0) || (trajet.id === 0);
 
       const col = document.createElement("div");
       col.className = "col-md-6 col-lg-4 mb-4";
@@ -160,22 +168,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 <img src="${imgSrc}" alt="Photo du conducteur" class="rounded-circle border me-3" style="width:48px; height:48px; object-fit:cover; cursor:pointer;">
               </a>
               <div class="w-100">
-                <div class="fw-bold">${trajet.conducteur_prenom} ${trajet.conducteur_nom} ${badgeEcoHtml}</div>
+                <div class="fw-bold">${trajet.conducteur_prenom ?? ''} ${trajet.conducteur_nom ?? ''} ${badgeEcoHtml}</div>
                 <div class="text-muted small">Conducteur</div>
               </div>
             </div>
-            <div class="mb-2">
-              <span class="fw-semibold">Départ&nbsp;:</span> ${trajet.depart}
-            </div>
-            <div class="mb-2">
-              <span class="fw-semibold">Arrivée&nbsp;:</span> ${trajet.arrivee}
-            </div>
+            <div class="mb-2"><span class="fw-semibold">Départ&nbsp;:</span> ${trajet.depart}</div>
+            <div class="mb-2"><span class="fw-semibold">Arrivée&nbsp;:</span> ${trajet.arrivee}</div>
             <div class="mb-2"><span class="fw-semibold">Date&nbsp;:</span> ${trajet.date} à ${trajet.heure}</div>
-            <div class="mb-2"><span class="fw-semibold">Jetons&nbsp;:</span> ${trajet.jetons} </div>
+            <div class="mb-2"><span class="fw-semibold">Jetons&nbsp;:</span> ${trajet.jetons}</div>
             <div class="mb-2"><span class="fw-semibold">Places dispo&nbsp;:</span> ${placesRestantes}</div>
           </div>
           <div class="card-footer bg-transparent border-0">
-            <button class="btn btn-success w-100 btn-reserver" data-trajet-id="${trajet.id}" ${placesRestantes <= 0 ? "disabled" : ""}>Réserver</button>
+            <button
+              class="btn btn-success w-100 btn-reserver"
+              data-trajet-id="${trajet.id}"
+              ${disableReserv ? "disabled" : ""}
+              title="${trajet.id === 0 ? "Réservation indisponible pour ce trajet (non synchronisé MySQL)" : ""}"
+            >Réserver</button>
           </div>
         </div>
       `;
@@ -207,6 +216,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function ouvrirModalReservation(trajetId) {
     let trajets = window.lastTrajetsListe || [];
     let trajet = trajets.find(t => t.id == trajetId);
+
+    // Bloque si pas d'id MySQL (cas Mongo pur)
+    if (trajet && (trajet.id === 0)) {
+      alert("Réservation indisponible pour ce trajet (non synchronisé MySQL).");
+      return;
+    }
+
     let maxPlaces = trajet ? ((parseInt(trajet.places) || 0) - (parseInt(trajet.total_reservations) || 0)) : 1;
     if (maxPlaces < 1) maxPlaces = 1;
 
@@ -238,32 +254,24 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const jetonsParPlace = trajet ? parseFloat(trajet.jetons) : 0;
-      const commission = 2; // commission fixe (à adapter si besoin)
+      const commission = 2; // commission fixe (à adapter)
       const totalCredits = (jetonsParPlace * places) + commission;
 
-      if (!confirm(`Vous allez dépenser ${totalCredits} jetons (prix trajet + commission).\nConfirmez-vous ?`)) {
-        return; // annule si refus
-      }
-
-      if (!confirm("Êtes-vous sûr de vouloir confirmer cette réservation ?")) {
-        return; // annule si refus
-      }
+      if (!confirm(`Vous allez dépenser ${totalCredits} jetons (prix trajet + commission).\nConfirmez-vous ?`)) return;
+      if (!confirm("Êtes-vous sûr de vouloir confirmer cette réservation ?")) return;
 
       fetch(basePath + 'reserver.php', {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
-        body: JSON.stringify({
-          trajet_id: trajetId,
-          places: places
-        })
+        body: JSON.stringify({ trajet_id: trajetId, places })
       })
       .then(r => r.json())
       .then(data => {
         modal.hide();
         if (data.success) {
           alert("Réservation effectuée !");
-          rechercherTrajets(); // recharge la liste en gardant les filtres
+          rechercherTrajets();
         } else {
           alert(data.error || "Erreur lors de la réservation");
         }
@@ -291,17 +299,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!depart || !arrivee || !date) {
-      alert("Veuillez renseigner le départ, l’arrivée et la date pour la recherche.");
+      alert("Veuillez renseigner le départ, l'arrivée et la date pour la recherche.");
       return;
     }
 
-    let url = basePath + 'trajets.php?all=1';
+    let url = basePath + LIST_ENDPOINT + '?all=1';
     url += '&depart=' + encodeURIComponent(depart);
     url += '&arrivee=' + encodeURIComponent(arrivee);
     url += '&date=' + encodeURIComponent(date);
-    if (places) url += '&places_min=' + encodeURIComponent(places);
+    if (places)   url += '&places_min=' + encodeURIComponent(places);
     if (jetonsMax) url += '&jetons_max=' + encodeURIComponent(jetonsMax);
-    if (noteMin) url += '&note_min=' + encodeURIComponent(noteMin);
+    if (noteMin)  url += '&note_min=' + encodeURIComponent(noteMin);
 
     fetch(url, { credentials: 'include' })
       .then(res => res.json())
@@ -316,12 +324,10 @@ document.addEventListener("DOMContentLoaded", () => {
               Aucun trajet disponible à cette date.<br>
               Essayez plutôt le <a href="#" id="changerDateAlternative">${data.date_alternative}</a>.
             `;
-            // Ajout d'un clic pour modifier la date de recherche automatiquement
             const lienDateAlt = document.getElementById("changerDateAlternative");
             if (lienDateAlt) {
               lienDateAlt.addEventListener("click", (e) => {
                 e.preventDefault();
-                // Format attendu yyyy-mm-dd pour input date
                 const parts = data.date_alternative.split('/');
                 if(parts.length === 3) {
                   const dateFormatee = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
@@ -340,7 +346,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // --- Ajouter un trajet (inchangé) ---
+  // --- Ajouter un trajet (reste sur MySQL) ---
   function ajouterTrajet() {
     const depart = document.getElementById("depart")?.value.trim() || "";
     const arrivee = document.getElementById("arrivee")?.value.trim() || "";
@@ -354,7 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    fetch(basePath + "trajets.php", {
+    fetch(basePath + ADD_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: 'include',
@@ -363,9 +369,9 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          // Recharge UNIQUEMENT si tu veux que l’ajout affiche le trajet dans la vue conducteur (non sur la page publique par défaut)
-          // rechercherTrajets(); // à activer si tu veux afficher les trajets après ajout
           document.getElementById("trajetForm")?.reset();
+          // Activer si tu veux recharger la liste tout de suite :
+          // rechercherTrajets();
         } else {
           alert(data.error || "Erreur lors de l'ajout du trajet !");
         }

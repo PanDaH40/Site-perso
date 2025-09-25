@@ -1,21 +1,11 @@
 <?php
 // historique_conducteur.php
-header('Content-Type: application/json');
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-$host = "sql309.infinityfree.com";
-$dbname = "if0_39505571_db_projet";
-$username = "if0_39505571";
-$password = "qBOSjJTyyq5Trff";
+header('Content-Type: application/json; charset=utf-8');
 
 try {
-    $pdo = new PDO("mysql:host=sql309.infinityfree.com;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
-} catch (PDOException $e) {
-    echo json_encode(['error' => 'Erreur connexion BD']);
-    exit;
+    require_once __DIR__ . '/db_conn.php';
+} catch (Throwable $e) {
+    echo json_encode(['error' => 'Erreur connexion BD']); exit;
 }
 
 $conducteurId = $_GET['id'] ?? null;

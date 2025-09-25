@@ -1,0 +1,12 @@
+# .htaccess à la racine du projet
+Options -Indexes
+
+# Bloquer l’accès aux fichiers sensibles
+<FilesMatch "^(Dockerfile|docker-compose\.yml|\.env|composer\.json|composer\.lock|package\.json|package-lock\.json|README\.md)$">
+  Require all denied
+</FilesMatch>
+
+# Bloquer tous les fichiers commençant par un point (.env, .git, etc.)
+<FilesMatch "^\..+">
+  Require all denied
+</FilesMatch>

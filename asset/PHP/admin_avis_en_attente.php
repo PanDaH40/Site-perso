@@ -1,6 +1,7 @@
 <?php
 session_start();
-require_once 'login.php';      
+require_once __DIR__ . '/check_admin.php';
+require_once __DIR__ . '/db_conn.php'; // $pdo dispo   
 
 // Génération d'un token CSRF simple
 if (!isset($_SESSION['csrf_token'])) {

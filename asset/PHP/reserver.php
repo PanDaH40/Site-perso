@@ -27,19 +27,8 @@ if ($trajetId <= 0 || $places <= 0) {
 }
 
 try {
-    $pdo = new PDO(
-        "mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8",
-        "if0_39505571",
-        "qBOSjJTyyq5Trff",
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Erreur base de données']);
-    exit;
-}
+    require_once __DIR__ . '/db_conn.php';
 
-try {
     $pdo->beginTransaction();
 
     // Vérifier places restantes uniquement sur les réservations validées

@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once __DIR__ . '/db_conn.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user']['id'])) {
@@ -9,15 +10,7 @@ if (!isset($_SESSION['user']['id'])) {
 
 $userId = $_SESSION['user']['id'];
 
-$host = 'localhost';
-$dbname = 'covoiturage_db';
-$username = 'root';
-$password = '';
-
 try {
-    $pdo = new PDO("mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8", "if0_39505571", "qBOSjJTyyq5Trff");
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
     $data = json_decode(file_get_contents('php://input'), true);
     $id = $data['id'] ?? null;
 
