@@ -5,7 +5,7 @@ on:
     branches: [ developpement ]
   workflow_dispatch: {}
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/30 * * * *"  # toutes les 30 minutes
 
 jobs:
   sync:
@@ -47,27 +47,26 @@ jobs:
         env:
           AIVEN_CA_PEM: ${{ secrets.AIVEN_CA_PEM }}
 
-      - name: Ensure composer.json exists (minimal)
+      # 👇 Remplace l’ancienne étape heredoc par ces deux étapes :
+      - name: Init composer.json if missing
         run: |
           if [ ! -f composer.json ]; then
-            printf '%s\n' \
-              '{' \
-              '  "name": "tpcovoiturage/sync",' \
-              '  "description": "Sync Aiven MySQL -> MongoDB Atlas",' \
-              '  "type": "project",' \
-              '  "require": {' \
-              '    "php": "^8.1 || ^8.2 || ^8.3",' \
-              '    "mongodb/mongodb": "^1.19"' \
-              '  }' \
-              '}' > composer.json
+            composer init --name="tpcovoiturage/sync" \
+                          --description="Sync Aiven MySQL -> MongoDB Atlas" \
+                          --type=project \
+                          --no-interaction
           fi
           cat composer.json
 
-      - name: Check sync script exists
-        run: test -f asset/PHP/mysql_to_mongo_full_dump.php || (echo "sync script missing at asset/PHP/mysql_to_mongo_full_dump.php" && exit 1)
+      - name: Require mongodb library
+        run: composer require mongodb/mongodb:^1.19 --no-interaction --no-progress
 
+      # (optionnel) réinstalle, no-op si déjà installé par "require"
       - name: Install Composer deps
         run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Check sync script exists
+        run: test -f asset/PHP/mysql_to_mongo_full_dump.php || (echo "sync script missing at asset/PHP/mysql_to_mongo_full_dump.php" && exit 1)
 
       - name: Run sync MySQL -> Mongo (full reset)
         run: php asset/PHP/mysql_to_mongo_full_dump.php --reset
