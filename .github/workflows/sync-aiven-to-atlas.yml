@@ -26,7 +26,7 @@ jobs:
       DB_PORT:     18502
       DB_DATABASE: ${{ secrets.AIVEN_DB       || vars.AIVEN_DB       || 'covoit' }}
       DB_USERNAME: ${{ secrets.AIVEN_USER     || vars.AIVEN_USER     || 'avnadmin' }}
-      DB_PASSWORD: ${{ secrets.AIVEN_PASS     || vars.AIVEN_PASS     || '' }}
+      DB_PASSWORD: ${{ secrets.AIVEN_PASS || secrets.AIVEN_PASSWORD || vars.AIVEN_PASS || vars.AIVEN_PASSWORD || '' }}
       DB_SSL_CA:   ${{ github.workspace }}/asset/certs/aiven-ca.pem
 
       # --- Mongo Atlas ---
