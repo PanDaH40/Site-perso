@@ -16,7 +16,6 @@ services:
       DB_DATABASE: "${DB_DATABASE:-covoit}"
       DB_USERNAME: "${DB_USERNAME:-covoit}"
       DB_PASSWORD: "${DB_PASSWORD:-covoit}"
-      DB_SSL_CA: "${DB_SSL_CA:-}"          # laisser vide si non utilisé
 
       # --- Mongo ---
       # Lit la valeur depuis .env ; par défaut pointe sur le conteneur mongo local
