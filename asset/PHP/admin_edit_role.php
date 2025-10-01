@@ -10,14 +10,10 @@ if (!$id || !in_array($role, ['conducteur', 'passager', 'les deux'])) {
 }
 
 try {
-    $pdo = new PDO(
-    'mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8',
-    'if0_39505571',
-    'qBOSjJTyyq5Trff',
-    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-);
+    require_once __DIR__ . '/db_conn.php';
+    $pdo->beginTransaction();
 
-$pdo->beginTransaction();
+    
     // On commence par tout supprimer (pour éviter les doublons)
         $pdo->prepare("DELETE FROM conducteurs WHERE inscrit_id=?")->execute([$id]);
         $pdo->prepare("DELETE FROM passagers WHERE inscrit_id=?")->execute([$id]);

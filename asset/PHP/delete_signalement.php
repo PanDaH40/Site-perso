@@ -1,6 +1,8 @@
 <?php
 session_start();
 header('Content-Type: application/json');
+require_once __DIR__ . '/db_conn.php';
+require_once __DIR__ . '/check_admin.php';
 
 if (!isset($_SESSION['user']['admin']) || $_SESSION['user']['admin'] != 1) {
     http_response_code(403);
@@ -18,10 +20,7 @@ if ($id < 1) {
 }
 
 try {
-    $pdo = new PDO('mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8', 'if0_39505571', 'qBOSjJTyyq5Trff', [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
-
+    
     $stmt = $pdo->prepare("DELETE FROM signalements WHERE id = ?");
     $stmt->execute([$id]);
 

@@ -11,7 +11,7 @@ if (!$id || strlen($password) < 6) {
 }
 
 try {
-    $pdo = new PDO('mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8','if0_39505571','qBOSjJTyyq5Trff');
+    require_once __DIR__ . '/db_conn.php';
     $hash = password_hash($password, PASSWORD_DEFAULT);
     $stmt = $pdo->prepare("UPDATE inscrits SET mot_de_passe=? WHERE id=?");
     $stmt->execute([$hash, $id]);

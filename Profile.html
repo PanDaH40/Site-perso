@@ -10,52 +10,54 @@
   </head>
 
   <body>
-    <header class="bg-light py-3">
-      <div class="container d-flex justify-content-between align-items-center">
-        <h1 class="h4 mb-0">Mon Profil</h1>
-        <div class="d-flex justify-content-end mb-2"></div>
-      </div>
+    <header class="parallax-header text-white">
+  <div class="overlay"></div> <!-- voile sombre pour lisibilité -->
+  
+  <div class="container d-flex justify-content-between align-items-center pt-3">
+    <h1 class="h4 mb-0">Mon Profil</h1>
+    <div class="d-flex justify-content-end mb-2"></div>
+  </div>
 
-      <!-- Notification cloche -->
-      <a href="Messagerie.html" id="notif-messages" class="position-relative m-3 d-inline-block">
-        <i class="bi bi-bell fs-3"></i>
-        <span id="notif-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none;">0</span>
-      </a>
+  <!-- Notification cloche -->
+  <a href="Messagerie.html" id="notif-messages" class="position-relative m-3 d-inline-block">
+    <i class="bi bi-bell fs-3"></i>
+    <span id="notif-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display:none;">0</span>
+  </a>
 
-      <div class="d-flex justify-content-end gap-2 mb-2">
-        <a href="PageDaccueil.html" class="btn btn-outline-warning btn-sm">
-          <i class="bi bi-house-door"></i> Accueil
-        </a>
-        <button id="logoutBtn" class="btn btn-outline-warning btn-sm">
-          Déconnexion
-        </button>
-      </div>
+  <div class="d-flex justify-content-end gap-2 mb-2">
+    <a href="PageDaccueil.html" class="btn btn-outline-warning btn-sm">
+      <i class="bi bi-house-door"></i> Accueil
+    </a>
+    <button id="logoutBtn" class="btn btn-outline-warning btn-sm">
+      Déconnexion
+    </button>
+  </div>
 
-      <!-- Photo de profil -->
-      <div class="mb-3 text-center">
-        <label for="profileAvatar" class="form-label d-block">Photo de profil</label>
-        <img
-          id="avatarPreview"
-          src="./asset/Images/default_03.png"
-          alt="Avatar"
-          class="avatar-preview mb-2"
-          style="width: 120px; height: 120px; object-fit: cover; cursor: pointer; border-radius: 50%; border: 2px solid #ddd;"
-        >
+  <!-- Photo de profil -->
+  <div class="mb-3 text-center">
+    <label for="profileAvatar" class="form-label d-block text-white">Photo de profil</label>
+    <img
+      id="avatarPreview"
+      src="./asset/Images/default_03.png"
+      alt="Avatar"
+      class="avatar-preview mb-2"
+      style="width: 120px; height: 120px; object-fit: cover; cursor: pointer; border-radius: 50%; border: 2px solid #fff;"
+    >
 
-        <form id="avatarUploadForm" enctype="multipart/form-data" style="display: inline">
-          <input
-            type="file"
-            id="profileAvatar"
-            name="avatar"
-            accept="image/*"
-            style="display: none"
-          >
-          <input type="hidden" id="avatarUserId" name="user_id" value="">
-        </form>
-        <div id="avatarUploadResult" class="mt-2"></div>
-      </div>
-      
-    </header>
+    <form id="avatarUploadForm" enctype="multipart/form-data" style="display: inline">
+      <input
+        type="file"
+        id="profileAvatar"
+        name="avatar"
+        accept="image/*"
+        style="display: none"
+      >
+      <input type="hidden" id="avatarUserId" name="user_id" value="">
+    </form>
+    <div id="avatarUploadResult" class="mt-2 text-white"></div>
+  </div>
+</header>
+
 
     <main class="container mt-4">
 

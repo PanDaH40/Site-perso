@@ -1,10 +1,12 @@
 <?php
 
+require __DIR__ . '/db_conn.php'; // utilise la connexion centralisée $pdo
 
-$host = "sql309.infinityfree.com";
-$dbname = "if0_39505571_db_projet";
-$username = "if0_39505571";
-$password = "qBOSjJTyyq5Trff";
+// contrôle d’accès
+if (($_GET['key'] ?? '') !== SITE_ACCESS_KEY) {
+  header('HTTP/1.1 403 Forbidden');
+  exit('Accès restreint.');
+}
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
@@ -17,5 +19,3 @@ try {
     ]);
     exit;
 }
-
-

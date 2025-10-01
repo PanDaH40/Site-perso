@@ -1,4 +1,3 @@
-// === autocomplete.js ===
 // Gère l'autocomplétion des adresses avec l'API https://api-adresse.data.gouv.fr/
 // Fonctionne pour : #departure, #arrival, #depart, #arrivee
 

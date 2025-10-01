@@ -1,7 +1,3 @@
 # Ignorer la base de données
-config.php
-test-db.php
-.history
-asset/PHP/test-db.php
 .env
 htdocs

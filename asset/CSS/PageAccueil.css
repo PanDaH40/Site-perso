@@ -4,6 +4,13 @@
     font-size: 500%;
 }
 
+.admin-badge {
+  background-color: #dc3545; /* rouge bootstrap danger */
+  color: white;
+  padding: 0.25em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.75em;
+}
 
     /* Bouton se connecter */
 
@@ -25,7 +32,7 @@
 
 /* parallax  */
 .parallax {
-    background-image: url(../Images/sphere-avec-des-arbres.jpg);
+    background-image: url(/asset/Images/image2.jpg);
     height: 300px;
     background-attachment: fixed;
     background-position: center;
@@ -34,7 +41,7 @@
 }
 
 .parallax2 {
-    background-image: url(../Images/sphere-avec-des-arbres.jpg);
+    background-image: url(/asset/Images/image2.jpg);
     height: 650px;
     background-attachment: fixed;
     background-position: center;

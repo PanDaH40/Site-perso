@@ -1,4 +1,33 @@
 <?php
+
+// session_start();
+// header('Content-Type: application/json; charset=utf-8');
+// require_once __DIR__ . '/db_conn.php';
+
+// $userId = (int)($_SESSION['user']['id'] ?? 0);
+// if ($userId <= 0) { echo json_encode(['error'=>'Non connecté']); exit; }
+
+// try {
+//   // soft delete (statut = 'supprime'). Si tu veux un hard delete, remplace par DELETE.
+//   $stmt = $pdo->prepare("UPDATE inscrits SET statut='supprime' WHERE id=?");
+//   $stmt->execute([$userId]);
+
+//   // détruit la session
+//   $_SESSION = [];
+//   if (ini_get('session.use_cookies')) {
+//     $params = session_get_cookie_params();
+//     setcookie(session_name(), '', time()-42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+//   }
+//   session_destroy();
+
+//   echo json_encode(['success'=>true]);
+// } catch (Throwable $e) {
+//   error_log('delete_account: '.$e->getMessage());
+//   echo json_encode(['error'=>'Erreur serveur']);
+// }
+
+
+
 session_start();
 header('Content-Type: application/json');
 

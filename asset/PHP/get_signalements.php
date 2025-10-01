@@ -9,9 +9,7 @@ if (!isset($_SESSION['user']['admin']) || $_SESSION['user']['admin'] != 1) {
 }
 
 try {
-    $pdo = new PDO('mysql:host=sql309.infinityfree.com;dbname=if0_39505571_db_projet;charset=utf8', 'if0_39505571', 'qBOSjJTyyq5Trff', [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    require_once __DIR__ . '/db_conn.php';
     
     $stmt = $pdo->prepare("
         SELECT s.id, s.signale_par, s.type, s.motif, s.description, s.statut, s.date_signalement,
