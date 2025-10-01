@@ -1,0 +1,200 @@
+name: Sync Aiven MySQL to Mongo Atlas
+
+on:
+  push:
+    branches: [ developpement ]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branche à exécuter'
+        required: true
+        default: 'developpement'
+  schedule:
+    - cron: "*/30 * * * *"
+
+jobs:
+  sync:
+    # Exécute uniquement sur la branche 'developpement'
+    if: ${{ github.ref_name == 'developpement' || (github.event_name == 'workflow_dispatch' && github.event.inputs.branch == 'developpement') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # --- MySQL (Aiven) ---
+      DB_HOST:     ${{ secrets.AIVEN_HOST }}
+      DB_PORT:     18502
+      DB_DATABASE: ${{ secrets.AIVEN_DB }}
+      DB_USERNAME: ${{ secrets.AIVEN_USER }}
+      DB_PASSWORD: ${{ secrets.AIVEN_PASS }}
+      DB_SSL_CA:   ${{ github.workspace }}/asset/certs/aiven-ca.pem
+
+      # --- Mongo Atlas ---
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB:  ${{ secrets.MONGODB_DB }}
+
+    steps:
+      - name: Debug refs
+        run: |
+          echo "event     : ${{ github.event_name }}"
+          echo "ref_name  : ${{ github.ref_name }}"
+          echo "dispatch  : ${{ github.event.inputs.branch }}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch || 'developpement' }}
+
+      - name: Where am I?
+        run: |
+          echo "Repo: $GITHUB_REPOSITORY"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          echo "Ref: $GITHUB_REF_NAME  Event: $GITHUB_EVENT_NAME"
+
+      - name: Secrets presence (booleans)
+        run: |
+          echo "AIVEN_HOST set?       ${{ secrets.AIVEN_HOST != '' }}"
+          echo "AIVEN_DB set?         ${{ secrets.AIVEN_DB != '' }}"
+          echo "AIVEN_USER set?       ${{ secrets.AIVEN_USER != '' }}"
+          echo "AIVEN_PASS set?       ${{ secrets.AIVEN_PASS != '' }}"
+          echo "AIVEN_CA_PEM_B64 set? ${{ secrets.AIVEN_CA_PEM_B64 != '' }}"
+          echo "MONGODB_URI set?      ${{ secrets.MONGODB_URI != '' }}"
+          echo "MONGODB_DB set?       ${{ secrets.MONGODB_DB != '' }}"
+
+      - name: Ensure mysql client & openssl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client openssl
+
+      - name: Create Aiven CA file (decode base64)
+        env:
+          AIVEN_CA_PEM_B64: ${{ secrets.AIVEN_CA_PEM_B64 }}
+        run: |
+          mkdir -p asset/certs
+          echo "${AIVEN_CA_PEM_B64}" | base64 -d > "${DB_SSL_CA}"
+          echo "CA path: ${DB_SSL_CA}"
+          ls -l "${DB_SSL_CA}"
+          echo -n "Bytes: "; wc -c < "${DB_SSL_CA}"
+          echo -n "BEGIN count: "; grep -c "BEGIN CERTIFICATE" "${DB_SSL_CA}" || true
+          echo "----- first line -----"; head -n 1 "${DB_SSL_CA}"
+          echo "----- last  line -----"; tail -n 1 "${DB_SSL_CA}"
+
+      - name: Validate CA with openssl
+        run: |
+          openssl x509 -in "${DB_SSL_CA}" -noout -subject -issuer -enddate
+
+      - name: Validate required MySQL env
+        run: |
+          for var in DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD DB_SSL_CA; do
+            if [ -z "${!var}" ]; then
+              echo "::error title=Missing env::${var} is empty"; exit 1
+            fi
+          done
+          if ! echo "$DB_PORT" | grep -Eq '^[0-9]+$'; then
+            echo "::error title=Invalid port::DB_PORT must be numeric, got: '$DB_PORT'"; exit 1
+          fi
+          echo "Host=$DB_HOST  Port=$DB_PORT  DB=$DB_DATABASE"
+
+      - name: Check DB_PASSWORD presence and raw length (masked)
+        run: |
+          if [ -z "${DB_PASSWORD}" ]; then
+            echo "::error::DB_PASSWORD is empty"; exit 1
+          fi
+          echo "DB_PASSWORD raw length: ${#DB_PASSWORD}"
+          # masque la version brute dès maintenant (par précaution)
+          echo "::add-mask::${DB_PASSWORD}"
+
+      - name: Sanitize DB_PASSWORD (strip CR/LF + trim spaces)
+        id: sanitize_pwd
+        shell: bash
+        run: |
+          CLEANED="$(printf '%s' "$DB_PASSWORD" | tr -d '\r\n' | sed -e 's/^[[:space:]]\+//' -e 's/[[:space:]]\+$//')"
+          echo "DB_PASSWORD_CLEAN=$CLEANED" >> $GITHUB_ENV
+          echo "::add-mask::${CLEANED}"
+          echo "len.cleaned=${#CLEANED}"
+
+      - name: Ensure DB_PASSWORD_CLEAN in env
+        run: |
+          if [ -z "${DB_PASSWORD_CLEAN:-}" ]; then
+            echo "::error::DB_PASSWORD_CLEAN is empty after sanitize"; exit 1
+          fi
+          echo "len(DB_PASSWORD_CLEAN)=${#DB_PASSWORD_CLEAN}"
+
+      - name: Sanitize DB_DATABASE (strip CR/LF + trim spaces)
+        run: |
+          CLEAN_DB="$(printf '%s' "$DB_DATABASE" | tr -d '\r\n' | sed -e 's/^[[:space:]]\+//' -e 's/[[:space:]]\+$//')"
+          echo "DB_DATABASE_CLEAN=$CLEAN_DB" >> $GITHUB_ENV
+          echo "DB name: [$CLEAN_DB]"
+          echo "len.dbname=${#CLEAN_DB}"
+
+      - name: Test MySQL TLS connectivity (CLI)
+        env:
+          MYSQL_PWD: ${{ env.DB_PASSWORD_CLEAN }}
+        run: |
+          mysql --version
+          # 1) test auth sans base (évite 1049 si DB absente)
+          mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
+            --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
+            -e "SELECT CURRENT_USER(), @@version"
+
+          # 2) test avec la base (utilise -D plutôt que l'argument positionnel)
+          mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" \
+            --ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA" \
+            -D "$DB_DATABASE_CLEAN" \
+            -e "SELECT DATABASE(); SHOW TABLES;"
+
+      - name: Setup PHP (with mongodb ext 2.x)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          extensions: pdo_mysql, mongodb
+          coverage: none
+
+      - name: Show PHP & ext versions
+        run: |
+          php -v
+          php -m | grep -i mongodb || true
+          php -r 'echo "ext-mongodb version: ", phpversion("mongodb")?: "n/a", PHP_EOL;'
+
+      - name: Ensure composer files exist
+        run: |
+          test -f composer.json || (echo "composer.json manquant : ajoute-le au repo" && exit 1)
+          echo "composer.json:"; cat composer.json
+          test -f composer.lock && echo "composer.lock présent" || echo "composer.lock absent (ok)"
+
+      - name: Install Composer deps (honor lock)
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          composer show -i | grep -E '^mongodb/mongodb|^psr/log|polyfill-php85' || true
+
+      - name: Check autoload
+        run: test -f vendor/autoload.php || (echo "vendor/autoload.php manquant" && exit 1)
+
+      - name: Check sync script exists
+        run: |
+          ls -la asset/PHP || true
+          test -f asset/PHP/mysql_to_mongo_full_dump.php || (echo "sync script missing at asset/PHP/mysql_to_mongo_full_dump.php" && exit 1)
+
+      - name: Run sync MySQL -> Mongo (full reset)
+        env:
+          DB_HOST: ${{ env.DB_HOST }}
+          DB_PORT: ${{ env.DB_PORT }}
+          DB_DATABASE: ${{ env.DB_DATABASE_CLEAN }}
+          DB_USERNAME: ${{ env.DB_USERNAME }}
+          DB_PASSWORD: ${{ env.DB_PASSWORD_CLEAN }}
+          DB_SSL_CA: ${{ env.DB_SSL_CA }}
+          MONGODB_URI: ${{ env.MONGODB_URI }}
+          MONGODB_DB:  ${{ env.MONGODB_DB }}
+        run: php asset/PHP/mysql_to_mongo_full_dump.php --reset
+
+      - name: Verify counts in Atlas
+        run: |
+          php -r '
+          require "vendor/autoload.php";
+          $c=new MongoDB\Client(getenv("MONGODB_URI"));
+          $db=$c->selectDatabase(getenv("MONGODB_DB")?: "covoit");
+          foreach($db->listCollections() as $co){
+            $n=$co->getName();
+            $cnt=$db->selectCollection($n)->countDocuments();
+            echo $n,": ",$cnt,PHP_EOL;
+          }'
