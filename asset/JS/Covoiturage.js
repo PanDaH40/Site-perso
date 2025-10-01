@@ -1,16 +1,23 @@
-document.addEventListener("DOMContentLoaded", () => {
-  // Base path vers tes scripts PHP
-  const basePath = window.BASE_API_PATH || 'asset/PHP/';
+class TrajetsManager {
+  constructor() {
+    this.basePath = '/asset/PHP/';
+    this.LIST_ENDPOINT = 'trajets.php';
+    this.ADD_ENDPOINT = 'trajets.php';
+    this.lastTrajetsListe = [];
 
-  // 🔀 Active Mongo pour la LISTE (true) ; MySQL sinon (false)
-  const USE_MONGO = true;
-  const LIST_ENDPOINT = USE_MONGO ? 'trajets_mongo.php' : 'trajets.php';
+    document.addEventListener('DOMContentLoaded', () => {
+      this.init();
+    });
+  }
 
-  // ⚠️ On garde MySQL pour la création (trajets_mongo.php ne gère pas POST)
-  const ADD_ENDPOINT  = 'trajets.php';
+  init() {
+    this.afficherAucunTrajetInitial();
+    this.recupererParamsUrl();
+    this.setupEventListeners();
+  }
 
-  // --- Message initial : demander à l’utilisateur de remplir le formulaire ---
-  function afficherAucunTrajetInitial() {
+  // Affiche un message initial invitant à remplir le formulaire
+  afficherAucunTrajetInitial() {
     const liste = document.getElementById("liste-trajets");
     if (!liste) return;
     liste.innerHTML = `
@@ -21,119 +28,82 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
   }
-  afficherAucunTrajetInitial();
 
-  // --- Pré-remplissage si paramètres dans l’URL + recherche automatique ---
-  const urlParams = new URLSearchParams(window.location.search);
-  const depart = urlParams.get('depart');
-  const arrivee = urlParams.get('arrivee');
-  const date = urlParams.get('date');
-  const places = urlParams.get('places');
-
-  if (depart && arrivee && date) {
-    document.getElementById("searchDepart").value = depart;
-    document.getElementById("searchArrivee").value = arrivee;
-    document.getElementById("searchDate").value = date;
-    if (places) document.getElementById("searchPlaces").value = places;
-    rechercherTrajets();
-  }
-
-  // --- Mise à jour badge messages ---
-  function mettreAJourNotificationMessages() {
-    const notifBadge = document.getElementById('notif-badge');
-    if (!notifBadge) return;
-
-    fetch(basePath + 'get_messages_recus.php', { credentials: 'include' })
-      .then(res => {
-        if (!res.ok) throw new Error('Erreur réseau');
-        return res.json();
-      })
-      .then(data => {
-        const totalNonLus = data.totalNonLus || 0;
-        if (totalNonLus > 0) {
-          notifBadge.textContent = totalNonLus;
-          notifBadge.style.display = 'inline-block';
-        } else {
-          notifBadge.style.display = 'none';
-        }
-      })
-      .catch(() => {
-        notifBadge.style.display = 'none';
-      });
-  }
-
-  // --- Gestion affichage profil/messages selon session ---
-  const btnProfil = document.getElementById("btnProfil");
-  const btnMessages = document.getElementById("btnMessages");
-  fetch(basePath + 'check_session.php', { credentials: "include" })
-    .then(res => res.json())
-    .then(data => {
-      if (data.connected) {
-        if (btnProfil) btnProfil.style.display = "";
-        if (btnMessages) btnMessages.style.display = "";
-        mettreAJourNotificationMessages();
-      } else {
-        if (btnProfil) btnProfil.style.display = "none";
-        if (btnMessages) btnMessages.style.display = "none";
-        const notifBadge = document.getElementById('notif-badge');
-        if (notifBadge) notifBadge.style.display = 'none';
-      }
-    })
-    .catch(() => {
-      if (btnProfil) btnProfil.style.display = "none";
-      if (btnMessages) btnMessages.style.display = "none";
-      const notifBadge = document.getElementById('notif-badge');
-      if (notifBadge) notifBadge.style.display = 'none';
-    });
-
-  // --- Vérifie si utilisateur est conducteur avant d'afficher formulaire ajout ---
-  fetch(basePath + 'get_profile.php', { credentials: 'include' })
-    .then(res => res.json())
-    .then(data => {
-      const formAjout = document.getElementById("formAjoutContainer");
-      if (!formAjout) return;
-      if (!data.cond_prenom && !data.roleConducteur) {
-        formAjout.style.display = "none";
-        const info = document.createElement('div');
-        info.className = "alert alert-warning text-center";
-        info.innerHTML = `Vous devez activer le rôle <b>Conducteur</b> dans votre <a href='Profile.html'>profil</a> pour ajouter un trajet.`;
-        formAjout.parentNode.insertBefore(info, formAjout);
-      } else {
-        formAjout.style.display = "";
-      }
-    })
-    .catch(() => {
-      const formAjout = document.getElementById("formAjoutContainer");
-      if (formAjout) formAjout.style.display = "none";
-    });
-
-  // --- Gestion formulaire recherche ---
-  const searchForm = document.getElementById("searchForm");
-  if (searchForm) {
-    searchForm.addEventListener("submit", e => {
-      e.preventDefault();
-      rechercherTrajets();
-    });
-  }
-
-  // --- Gestion formulaire ajout trajet (reste côté MySQL) ---
-  const trajetForm = document.getElementById("trajetForm");
-  if (trajetForm) {
-    trajetForm.addEventListener("submit", e => {
-      e.preventDefault();
-      ajouterTrajet();
-    });
-  }
-
-  // --- Affichage des trajets trouvés ---
-  function afficherTrajets(trajets) {
-    window.lastTrajetsListe = trajets;
+  // Affiche un message quand aucun trajet n'est disponible
+  afficherAucunTrajet() {
     const liste = document.getElementById("liste-trajets");
     if (!liste) return;
+    liste.innerHTML = `
+      <div class="col-12">
+        <div class="alert alert-info text-center">
+          Aucun trajet disponible pour le moment.
+        </div>
+      </div>
+    `;
+  }
+
+  // Récupère les paramètres URL pour pré-remplissage et recherche auto
+  recupererParamsUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const depart = urlParams.get('depart');
+    const arrivee = urlParams.get('arrivee');
+    const date = urlParams.get('date');
+    const places = urlParams.get('places');
+
+    if (depart && arrivee && date) {
+      const inputDepart = document.getElementById("searchDepart");
+      const inputArrivee = document.getElementById("searchArrivee");
+      const inputDate = document.getElementById("searchDate");
+      const inputPlaces = document.getElementById("searchPlaces");
+
+      if (inputDepart) inputDepart.value = depart;
+      if (inputArrivee) inputArrivee.value = arrivee;
+      if (inputDate) inputDate.value = date;
+      if (places && inputPlaces) inputPlaces.value = places;
+
+      this.rechercherTrajets();
+    }
+  }
+
+  // Configure les écouteurs d'événements
+  setupEventListeners() {
+    // Formulaire recherche
+    const searchForm = document.getElementById("searchForm");
+    if (searchForm) {
+      searchForm.addEventListener("submit", e => {
+        e.preventDefault();
+        this.rechercherTrajets();
+      });
+    }
+
+    // Formulaire ajout trajet
+    const trajetForm = document.getElementById("trajetForm");
+    if (trajetForm) {
+      trajetForm.addEventListener("submit", e => {
+        e.preventDefault();
+        this.ajouterTrajet();
+      });
+    }
+
+    // Délégation pour boutons réserver (après affichage des trajets)
+    document.getElementById("liste-trajets")?.addEventListener("click", e => {
+      if (e.target && e.target.classList.contains("btn-reserver")) {
+        const trajetId = e.target.getAttribute("data-trajet-id");
+        this.ouvrirModalReservation(trajetId);
+      }
+    });
+  }
+
+  // Affiche la liste des trajets
+  afficherTrajets(trajets) {
+    this.lastTrajetsListe = trajets;
+    const liste = document.getElementById("liste-trajets");
+    if (!liste) return;
+
     liste.innerHTML = "";
 
     if (!trajets.length) {
-      afficherAucunTrajet();
+      this.afficherAucunTrajet();
       return;
     }
 
@@ -147,14 +117,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const placesRestantes = (parseInt(trajet.places) || 0) - (parseInt(trajet.total_reservations) || 0);
 
-      // Critère écologique (exemple)
+      // Critère écologique 
       const typeCarburant = (trajet.carburant || "").toLowerCase();
       const estEcologique = ['electric', 'électrique', 'hybride'].includes(typeCarburant);
       const badgeEcoHtml = estEcologique
         ? `<span class="badge bg-success float-end" title="Trajet écologique">🍃 Écologique</span>`
         : '';
 
-      // Désactivation si pas d'id MySQL (cas Mongo pur => id===0)
+      // Désactivation si pas d'id MySQL (id === 0)
       const disableReserv = (placesRestantes <= 0) || (trajet.id === 0);
 
       const col = document.createElement("div");
@@ -191,39 +161,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
       liste.appendChild(col);
     });
-
-    document.querySelectorAll(".btn-reserver").forEach(btn => {
-      btn.addEventListener("click", function () {
-        const trajetId = this.getAttribute("data-trajet-id");
-        ouvrirModalReservation(trajetId);
-      });
-    });
   }
 
-  function afficherAucunTrajet() {
-    const liste = document.getElementById("liste-trajets");
-    if (!liste) return;
-    liste.innerHTML = `
-      <div class="col-12">
-        <div class="alert alert-info text-center">
-          Aucun trajet disponible pour le moment.
-        </div>
-      </div>
-    `;
-  }
+  // Ouvre la modal de réservation avec confirmation
+  ouvrirModalReservation(trajetId) {
+    const trajet = this.lastTrajetsListe.find(t => t.id == trajetId);
 
-  // --- Ouvre modal réservation + double confirmation ---
-  function ouvrirModalReservation(trajetId) {
-    let trajets = window.lastTrajetsListe || [];
-    let trajet = trajets.find(t => t.id == trajetId);
+    if (!trajet) {
+      alert("Trajet introuvable.");
+      return;
+    }
 
-    // Bloque si pas d'id MySQL (cas Mongo pur)
-    if (trajet && (trajet.id === 0)) {
+    if (trajet.id === 0) {
       alert("Réservation indisponible pour ce trajet (non synchronisé MySQL).");
       return;
     }
 
-    let maxPlaces = trajet ? ((parseInt(trajet.places) || 0) - (parseInt(trajet.total_reservations) || 0)) : 1;
+    let maxPlaces = (parseInt(trajet.places) || 0) - (parseInt(trajet.total_reservations) || 0);
     if (maxPlaces < 1) maxPlaces = 1;
 
     const modalBody = document.getElementById("modalBody");
@@ -242,25 +196,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const modal = new bootstrap.Modal(document.getElementById('reservationModal'));
     modal.show();
 
+    // Gestion du clic sur le bouton confirmer réservation
     const btnConfirmer = document.getElementById("btnConfirmerReservation");
-    btnConfirmer.replaceWith(btnConfirmer.cloneNode(true));
+    btnConfirmer.replaceWith(btnConfirmer.cloneNode(true)); // Supprime anciens listeners
     const btnConfirmerNew = document.getElementById("btnConfirmerReservation");
 
-    btnConfirmerNew.onclick = function () {
+    btnConfirmerNew.onclick = () => {
       const places = parseInt(document.getElementById("nbPlacesReserve").value);
       if (!places || places < 1 || places > maxPlaces) {
         alert("Choisissez un nombre de places valide !");
         return;
       }
 
-      const jetonsParPlace = trajet ? parseFloat(trajet.jetons) : 0;
+      const jetonsParPlace = parseFloat(trajet.jetons) || 0;
       const commission = 2; // commission fixe (à adapter)
       const totalCredits = (jetonsParPlace * places) + commission;
 
       if (!confirm(`Vous allez dépenser ${totalCredits} jetons (prix trajet + commission).\nConfirmez-vous ?`)) return;
       if (!confirm("Êtes-vous sûr de vouloir confirmer cette réservation ?")) return;
 
-      fetch(basePath + 'reserver.php', {
+      fetch(this.basePath + 'reserver.php', {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
@@ -271,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
         modal.hide();
         if (data.success) {
           alert("Réservation effectuée !");
-          rechercherTrajets();
+          this.rechercherTrajets();
         } else {
           alert(data.error || "Erreur lors de la réservation");
         }
@@ -283,8 +238,8 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // --- Recherche de trajets ---
-  function rechercherTrajets() {
+  // Recherche des trajets selon critères
+  rechercherTrajets() {
     const depart = document.getElementById("searchDepart")?.value.trim() || "";
     const arrivee = document.getElementById("searchArrivee")?.value.trim() || "";
     const date = document.getElementById("searchDate")?.value.trim() || "";
@@ -303,7 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    let url = basePath + LIST_ENDPOINT + '?all=1';
+    let url = this.basePath + this.LIST_ENDPOINT + '?all=1';
     url += '&depart=' + encodeURIComponent(depart);
     url += '&arrivee=' + encodeURIComponent(arrivee);
     url += '&date=' + encodeURIComponent(date);
@@ -312,12 +267,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (noteMin)  url += '&note_min=' + encodeURIComponent(noteMin);
 
     fetch(url, { credentials: 'include' })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`Erreur réseau ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         if (Array.isArray(data.all_trajets) && data.all_trajets.length > 0) {
-          afficherTrajets(data.all_trajets);
+          this.afficherTrajets(data.all_trajets);
         } else if (data.date_alternative) {
-          afficherAucunTrajet();
+          this.afficherAucunTrajet();
           if (dateAltMsg) {
             dateAltMsg.style.display = "block";
             dateAltMsg.innerHTML = `
@@ -332,22 +290,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 if(parts.length === 3) {
                   const dateFormatee = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
                   document.getElementById("searchDate").value = dateFormatee;
-                  rechercherTrajets();
+                  this.rechercherTrajets();
                 }
               });
             }
           }
         } else {
-          afficherAucunTrajet();
+          this.afficherAucunTrajet();
         }
       })
       .catch(() => {
-        afficherAucunTrajet();
+        this.afficherAucunTrajet();
       });
   }
 
-  // --- Ajouter un trajet (reste sur MySQL) ---
-  function ajouterTrajet() {
+  // Ajout d’un nouveau trajet
+  ajouterTrajet() {
     const depart = document.getElementById("depart")?.value.trim() || "";
     const arrivee = document.getElementById("arrivee")?.value.trim() || "";
     const date = document.getElementById("date")?.value.trim() || "";
@@ -360,23 +318,27 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    fetch(basePath + ADD_ENDPOINT, {
+    fetch(this.basePath + this.ADD_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: 'include',
       body: JSON.stringify({ depart, arrivee, date, heure, places, jetons })
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`Erreur réseau ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         if (data.success) {
           document.getElementById("trajetForm")?.reset();
-          // Activer si tu veux recharger la liste tout de suite :
-          // rechercherTrajets();
+          this.rechercherTrajets();
         } else {
           alert(data.error || "Erreur lors de l'ajout du trajet !");
         }
       })
       .catch(() => alert("Erreur réseau lors de l'ajout du trajet !"));
   }
+}
 
-});
+// Instanciation pour lancer le script
+const trajetsManager = new TrajetsManager();

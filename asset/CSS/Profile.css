@@ -1,4 +1,5 @@
 /* Petite vignette circulaire */
+
 .avatar-preview {
   width: 100px;
   height: 100px;
@@ -11,3 +12,32 @@
 .alert.position-fixed {
   transition: opacity 0.5s ease;
 }
+
+.parallax-header {
+  position: relative;
+  background-image: url('/asset/Images/image2.jpg/'); /* 👉 mets ici ton image */
+  background-attachment: fixed; /* parallax */
+  background-size: cover;
+  background-position: center;
+  min-height: 300px; /* hauteur du header */
+  color: #fff;
+  text-align: center;
+  padding-bottom: 1rem;
+}
+
+.parallax-header .overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4); /* voile sombre */
+  z-index: 1;
+}
+
+.parallax-header > *:not(.overlay) {
+  position: relative;
+  z-index: 2; /* pour afficher le contenu au-dessus du voile */
+}
+
+

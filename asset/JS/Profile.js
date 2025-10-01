@@ -1,96 +1,141 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const $ = id => document.getElementById(id);
+class ProfileManager {
+  constructor() {
+    // Sélecteurs raccourcis
+    this.$ = id => document.getElementById(id);
 
-  const form             = $('profileForm');
-  const prenomInput      = $('profilePrenom');
-  const nomInput         = $('profileNom');
-  const emailInput       = $('profileEmail');
-  const bioInput         = $('profileBio');
-  const roleCondCheckbox = $('roleConducteur');
-  const rolePassCheckbox = $('rolePassager');
-  const conducteurFields = $('conducteurFields');
-  const passagerFields   = $('passagerFields');
-  const carburantSelect  = $('profileCarburant');
-  const animauxCheckbox  = $('acceptAnimaux');
-  const fumeurCheckbox   = $('acceptFumeur');
-  const preferencesInput = $('profilePreferences');
-  const avatarInput      = $('profileAvatar');
-  const avatarPreview    = $('avatarPreview');
-  const defaultAvatar    = 'asset/Images/default_03.png';
-  const notifBadge       = $('badge-msg') || $('notif-badge');
+    // Elements du DOM
+    this.form = this.$('profileForm');
+    this.prenomInput = this.$('profilePrenom');
+    this.nomInput = this.$('profileNom');
+    this.emailInput = this.$('profileEmail');
+    this.bioInput = this.$('profileBio');
+    this.roleCondCheckbox = this.$('roleConducteur');
+    this.rolePassCheckbox = this.$('rolePassager');
+    this.conducteurFields = this.$('conducteurFields');
+    this.passagerFields = this.$('passagerFields');
+    this.carburantSelect = this.$('profileCarburant');
+    this.animauxCheckbox = this.$('acceptAnimaux');
+    this.fumeurCheckbox = this.$('acceptFumeur');
+    this.preferencesInput = this.$('profilePreferences');
+    this.avatarInput = this.$('profileAvatar');
+    this.avatarPreview = this.$('avatarPreview');
+    this.defaultAvatar = 'asset/Images/default_03.png';
+    this.notifBadge = this.$('badge-msg') || this.$('notif-badge');
 
-  // Véhicule fields
-  const marqueVehiculeInput = $('profileMarqueVehicule');
-  const modeleVehiculeInput = $('profileModeleVehicule');
-  const plaqueInput         = $('profilePlaque');
-  const couleurInput        = $('profileCouleur');
-  const dateImmatInput      = $('profileDateImmat');
+    // Véhicule fields
+    this.marqueVehiculeInput = this.$('profileMarqueVehicule');
+    this.modeleVehiculeInput = this.$('profileModeleVehicule');
+    this.plaqueInput = this.$('profilePlaque');
+    this.couleurInput = this.$('profileCouleur');
+    this.dateImmatInput = this.$('profileDateImmat');
 
-  // Modal changement mot de passe
-  const btnOpenChangePwdModal = $('btnOpenChangePwdModal');
-  const changePasswordModalEl = $('changePasswordModal');
-  const changePasswordModal = changePasswordModalEl ? new bootstrap.Modal(changePasswordModalEl) : null;
-  const changePasswordForm = $('changePasswordForm');
-  const currentPasswordInput = $('currentPassword');
-  const newPasswordModalInput = $('newPasswordModal');
-  const confirmNewPasswordModalInput = $('confirmNewPasswordModal');
-  const modalErrorMsg = $('modalErrorMsg');
+    // Modal changement mot de passe
+    this.btnOpenChangePwdModal = this.$('btnOpenChangePwdModal');
+    this.changePasswordModalEl = this.$('changePasswordModal');
+    this.changePasswordModal = this.changePasswordModalEl ? new bootstrap.Modal(this.changePasswordModalEl) : null;
+    this.changePasswordForm = this.$('changePasswordForm');
+    this.currentPasswordInput = this.$('currentPassword');
+    this.newPasswordModalInput = this.$('newPasswordModal');
+    this.confirmNewPasswordModalInput = this.$('confirmNewPasswordModal');
+    this.modalErrorMsg = this.$('modalErrorMsg');
 
-  // Affiche ou cache sections conducteur/passager
-  function toggleRoleSections() {
-    if (roleCondCheckbox && conducteurFields) {
-      conducteurFields.style.display = roleCondCheckbox.checked ? '' : 'none';
-      if (marqueVehiculeInput) {
-        marqueVehiculeInput.required = !!roleCondCheckbox.checked;
-        marqueVehiculeInput.closest('.mb-3').style.display = roleCondCheckbox.checked ? '' : 'none';
-      }
-      if (modeleVehiculeInput) {
-        modeleVehiculeInput.required = !!roleCondCheckbox.checked;
-        modeleVehiculeInput.closest('.mb-3').style.display = roleCondCheckbox.checked ? '' : 'none';
-      }
-      if (carburantSelect) carburantSelect.required = !!roleCondCheckbox.checked;
-      if (plaqueInput) plaqueInput.required = !!roleCondCheckbox.checked;
-      if (couleurInput) couleurInput.required = !!roleCondCheckbox.checked;
-      if (dateImmatInput) dateImmatInput.required = !!roleCondCheckbox.checked;
-    }
-    if (rolePassCheckbox && passagerFields) {
-      passagerFields.style.display = rolePassCheckbox.checked ? '' : 'none';
-    }
-    if (preferencesInput) preferencesInput.required = false;
-  }
-  if (roleCondCheckbox) roleCondCheckbox.addEventListener('change', toggleRoleSections);
-  if (rolePassCheckbox) rolePassCheckbox.addEventListener('change', toggleRoleSections);
-
-  // Preview avatar
-  if (avatarPreview && avatarInput) {
-    avatarPreview.style.cursor = 'pointer';
-    avatarPreview.addEventListener('click', () => avatarInput.click());
-    avatarInput.addEventListener('change', () => {
-      const file = avatarInput.files[0];
-      if (file) {
-        if (!file.type.startsWith('image/')) {
-          alert("Format d'image non valide");
-          avatarInput.value = '';
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = e => { avatarPreview.src = e.target.result; };
-        reader.readAsDataURL(file);
-      }
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', () => {
+      this.init();
     });
   }
 
-  function setAvatar(imgEl, avatarPath) {
-    if (!imgEl) return;
-    imgEl.src = avatarPath && avatarPath !== 'null' ? avatarPath : defaultAvatar;
-    imgEl.onerror = function() {
-      this.src = defaultAvatar;
-      this.onerror = null;
-    };
+  init() {
+    this.toggleRoleSections();
+    this.attachEventListeners();
+    this.loadProfile();
+    this.startNotificationInterval();
   }
 
-  function majCreditsUI(nouveauxCredits) {
-    const creditsSpan = $('profileCredits');
+  // Affiche ou cache les sections conducteur/passager selon les rôles cochés
+  toggleRoleSections() {
+    if (this.roleCondCheckbox && this.conducteurFields) {
+      const showCond = this.roleCondCheckbox.checked;
+      this.conducteurFields.style.display = showCond ? '' : 'none';
+
+      if (this.marqueVehiculeInput) {
+        this.marqueVehiculeInput.required = showCond;
+        this.marqueVehiculeInput.closest('.mb-3').style.display = showCond ? '' : 'none';
+      }
+      if (this.modeleVehiculeInput) {
+        this.modeleVehiculeInput.required = showCond;
+        this.modeleVehiculeInput.closest('.mb-3').style.display = showCond ? '' : 'none';
+      }
+      if (this.carburantSelect) this.carburantSelect.required = showCond;
+      if (this.plaqueInput) this.plaqueInput.required = showCond;
+      if (this.couleurInput) this.couleurInput.required = showCond;
+      if (this.dateImmatInput) this.dateImmatInput.required = showCond;
+    }
+    if (this.rolePassCheckbox && this.passagerFields) {
+      this.passagerFields.style.display = this.rolePassCheckbox.checked ? '' : 'none';
+    }
+    if (this.preferencesInput) this.preferencesInput.required = false;
+  }
+
+  // Attache tous les écouteurs d'événements
+  attachEventListeners() {
+    if (this.roleCondCheckbox) {
+      this.roleCondCheckbox.addEventListener('change', () => this.toggleRoleSections());
+    }
+    if (this.rolePassCheckbox) {
+      this.rolePassCheckbox.addEventListener('change', () => this.toggleRoleSections());
+    }
+
+    if (this.avatarPreview && this.avatarInput) {
+      this.avatarPreview.style.cursor = 'pointer';
+      this.avatarPreview.addEventListener('click', () => this.avatarInput.click());
+      this.avatarInput.addEventListener('change', () => this.handleAvatarChange());
+    }
+
+    if (this.form) {
+      this.form.addEventListener('submit', e => this.handleProfileSubmit(e));
+    }
+
+    if (this.btnOpenChangePwdModal && this.changePasswordModal) {
+      this.btnOpenChangePwdModal.addEventListener('click', () => this.openChangePasswordModal());
+    }
+
+    if (this.changePasswordForm) {
+      this.changePasswordForm.addEventListener('submit', e => this.handleChangePasswordSubmit(e));
+    }
+  }
+
+  // Gestion du changement d'avatar avec preview
+  handleAvatarChange() {
+    const file = this.avatarInput.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert("Format d'image non valide");
+      this.avatarInput.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (this.avatarPreview) this.avatarPreview.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Définit l'avatar avec gestion du fallback
+  setAvatar(imgEl, avatarPath) {
+    if (!imgEl) return;
+    imgEl.src = avatarPath && avatarPath !== 'null' ? avatarPath : this.defaultAvatar;
+    imgEl.onerror = function() {
+      this.src = this.defaultAvatar;
+      this.onerror = null;
+    }.bind(this);
+  }
+
+  // Met à jour l'affichage des crédits et affiche une notification temporaire
+  majCreditsUI(nouveauxCredits) {
+    const creditsSpan = this.$('profileCredits');
     if (!creditsSpan) return;
     creditsSpan.textContent = nouveauxCredits;
 
@@ -103,195 +148,56 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => notif.remove(), 4000);
   }
 
-  // Charge le profil utilisateur depuis serveur
-  async function loadProfile() {
+  // Charge le profil utilisateur depuis le serveur et remplit le formulaire
+  async loadProfile() {
     try {
       const res = await fetch('asset/PHP/get_profile.php', { credentials: 'include' });
       if (!res.ok) throw new Error('Erreur réseau');
       const data = await res.json();
       if (data.error) return alert('Erreur chargement profil : ' + data.error);
 
-      if (roleCondCheckbox)   roleCondCheckbox.checked   = !!data.roleConducteur;
-      if (rolePassCheckbox)   rolePassCheckbox.checked   = !!data.rolePassager;
+      if (this.roleCondCheckbox) this.roleCondCheckbox.checked = !!data.roleConducteur;
+      if (this.rolePassCheckbox) this.rolePassCheckbox.checked = !!data.rolePassager;
 
-      toggleRoleSections();
+      this.toggleRoleSections();
 
-      if (prenomInput)        prenomInput.value          = data.prenom || data.user_prenom || '';
-      if (nomInput)           nomInput.value             = data.nom    || data.user_nom    || '';
-      if (emailInput)         emailInput.value           = data.email       || '';
-      if (bioInput)           bioInput.value             = data.bio         || '';
+      if (this.prenomInput) this.prenomInput.value = data.prenom || data.user_prenom || '';
+      if (this.nomInput) this.nomInput.value = data.nom || data.user_nom || '';
+      if (this.emailInput) this.emailInput.value = data.email || '';
+      if (this.bioInput) this.bioInput.value = data.bio || '';
 
-      if (carburantSelect)    carburantSelect.value      = data.carburant   || 'essence';
-      if (animauxCheckbox)    animauxCheckbox.checked    = !!data.animaux;
-      if (fumeurCheckbox)     fumeurCheckbox.checked     = !!data.fumeurs;
-      if (preferencesInput)   preferencesInput.value     = data.preferences || '';
+      if (this.carburantSelect) this.carburantSelect.value = data.carburant || 'essence';
+      if (this.animauxCheckbox) this.animauxCheckbox.checked = !!data.animaux;
+      if (this.fumeurCheckbox) this.fumeurCheckbox.checked = !!data.fumeurs;
+      if (this.preferencesInput) this.preferencesInput.value = data.preferences || '';
 
-      if (marqueVehiculeInput) marqueVehiculeInput.value = data.marque_vehicule || '';
-      if (modeleVehiculeInput) modeleVehiculeInput.value = data.modele_vehicule || '';
-      if (plaqueInput)      plaqueInput.value      = data.plaque || '';
-      if (couleurInput)     couleurInput.value     = data.couleur || '';
-      if (dateImmatInput)   dateImmatInput.value  = data.date_premiere_immatriculation || '';
+      if (this.marqueVehiculeInput) this.marqueVehiculeInput.value = data.marque_vehicule || '';
+      if (this.modeleVehiculeInput) this.modeleVehiculeInput.value = data.modele_vehicule || '';
+      if (this.plaqueInput) this.plaqueInput.value = data.plaque || '';
+      if (this.couleurInput) this.couleurInput.value = data.couleur || '';
+      if (this.dateImmatInput) this.dateImmatInput.value = data.date_premiere_immatriculation || '';
 
-      if (avatarPreview) {
-  const urlAvecCacheBuster = data.avatar + '?t=' + new Date().getTime();
-  setAvatar(avatarPreview, urlAvecCacheBuster);
-  avatarPreview.style.display = '';
-}
-      if (data.credits !== undefined) {
-        majCreditsUI(data.credits);
+      if (this.avatarPreview) {
+        const urlAvecCacheBuster = data.avatar + '?t=' + new Date().getTime();
+        this.setAvatar(this.avatarPreview, urlAvecCacheBuster);
+        this.avatarPreview.style.display = '';
       }
 
-      mettreAJourNotificationMessages();
+      if (data.credits !== undefined) {
+        this.majCreditsUI(data.credits);
+      }
+
+      this.mettreAJourNotificationMessages();
     } catch (err) {
       alert('Impossible de charger le profil.');
       console.error('Erreur fetch profil:', err);
-      if (notifBadge) notifBadge.style.display = 'none';
+      if (this.notifBadge) this.notifBadge.style.display = 'none';
     }
   }
 
-  // Rafraîchir crédits (externe)
-  async function actualiserCredits() {
-    try {
-      const res = await fetch('asset/PHP/get_profile.php', { credentials: 'include' });
-      if (!res.ok) throw new Error('Erreur réseau');
-      const data = await res.json();
-      if (data.credits !== undefined) {
-        majCreditsUI(data.credits);
-      }
-    } catch (e) {
-      console.error('Erreur lors de l’actualisation des crédits', e);
-    }
-  }
-
-  if (form) {
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-
-      if (!prenomInput?.value.trim() || !nomInput?.value.trim() || !emailInput?.value.trim()) {
-        alert('Veuillez remplir prénom, nom et email.');
-        return;
-      }
-
-      const fd = new FormData();
-      fd.append('prenom', prenomInput.value.trim());
-      fd.append('nom', nomInput.value.trim());
-      fd.append('email', emailInput.value.trim());
-      fd.append('bio', bioInput ? bioInput.value.trim() : '');
-      fd.append('roleConducteur', roleCondCheckbox && roleCondCheckbox.checked ? 1 : 0);
-      fd.append('rolePassager', rolePassCheckbox && rolePassCheckbox.checked ? 1 : 0);
-
-      if (roleCondCheckbox && roleCondCheckbox.checked) {
-        fd.append('profileMarqueVehicule', marqueVehiculeInput ? marqueVehiculeInput.value.trim() : '');
-        fd.append('profileModeleVehicule', modeleVehiculeInput ? modeleVehiculeInput.value.trim() : '');
-        fd.append('carburant', carburantSelect ? carburantSelect.value : 'essence');
-        fd.append('animaux', animauxCheckbox && animauxCheckbox.checked ? 1 : 0);
-        fd.append('fumeurs', fumeurCheckbox && fumeurCheckbox.checked ? 1 : 0);
-        fd.append('plaque', plaqueInput ? plaqueInput.value.trim() : '');
-        fd.append('couleur', couleurInput ? couleurInput.value.trim() : '');
-        fd.append('date_premiere_immatriculation', dateImmatInput ? dateImmatInput.value : '');
-      }
-      if (rolePassCheckbox && rolePassCheckbox.checked && preferencesInput && preferencesInput.value.trim()) {
-        fd.append('preferences', preferencesInput.value.trim());
-      }
-      if (avatarInput && avatarInput.files[0]) {
-        fd.append('avatar', avatarInput.files[0]);
-      }
-
-      try {
-        const res = await fetch('asset/PHP/update_profile.php', {
-          method: 'POST',
-          credentials: 'include',
-          body: fd
-        });
-        if (!res.ok) throw new Error('Erreur réseau');
-        const result = await res.json();
-        if (result.error) {
-          alert('Erreur enregistrement : ' + result.error);
-        } else {
-          alert('Profil mis à jour avec succès.');
-          if (result.avatarUrl && avatarPreview) {
-            setAvatar(avatarPreview, result.avatarUrl);
-          }
-          if (result.credits !== undefined) {
-            majCreditsUI(result.credits);
-          }
-        }
-      } catch (err) {
-        alert('Erreur réseau, impossible de mettre à jour.');
-        console.error('Erreur update profil:', err);
-      }
-    });
-  }
-
-  if (btnOpenChangePwdModal && changePasswordModal) {
-    btnOpenChangePwdModal.addEventListener('click', () => {
-      if (currentPasswordInput) currentPasswordInput.value = '';
-      if (newPasswordModalInput) newPasswordModalInput.value = '';
-      if (confirmNewPasswordModalInput) confirmNewPasswordModalInput.value = '';
-      if (modalErrorMsg) {
-        modalErrorMsg.textContent = '';
-        modalErrorMsg.style.display = 'none';
-      }
-      changePasswordModal.show();
-    });
-  }
-
-  if (changePasswordForm) {
-    changePasswordForm.addEventListener('submit', async e => {
-      e.preventDefault();
-
-      const currentPwd = currentPasswordInput?.value.trim();
-      const newPwd = newPasswordModalInput?.value.trim();
-      const confirmNewPwd = confirmNewPasswordModalInput?.value.trim();
-
-      if (!currentPwd || !newPwd || !confirmNewPwd) {
-        modalErrorMsg.textContent = 'Veuillez remplir tous les champs.';
-        modalErrorMsg.style.display = 'block';
-        return;
-      }
-      if (newPwd !== confirmNewPwd) {
-        modalErrorMsg.textContent = 'Le nouveau mot de passe et sa confirmation ne correspondent pas.';
-        modalErrorMsg.style.display = 'block';
-        return;
-      }
-
-      const fd = new FormData();
-      fd.append('passwordConfirm', currentPwd);
-      fd.append('newPassword', newPwd);
-      fd.append('newPasswordConfirm', confirmNewPwd);
-
-      try {
-        const res = await fetch('asset/PHP/update_profile.php', {
-          method: 'POST',
-          credentials: 'include',
-          body: fd
-        });
-
-        if (!res.ok) throw new Error('Erreur réseau');
-        const result = await res.json();
-
-        if (result.error) {
-          modalErrorMsg.textContent = result.error;
-          modalErrorMsg.style.display = 'block';
-        } else {
-          alert('Mot de passe changé avec succès.');
-          changePasswordModal.hide();
-          changePasswordForm.reset();
-        }
-      } catch (err) {
-        modalErrorMsg.textContent = 'Erreur réseau, veuillez réessayer.';
-        modalErrorMsg.style.display = 'block';
-        console.error('Erreur changement mot de passe:', err);
-      }
-    });
-  }
-
-  // Notification messages toutes les 30 secondes
-  setInterval(mettreAJourNotificationMessages, 30000);
-
-  // Badge notification messages
-  function mettreAJourNotificationMessages() {
-    if (!notifBadge) return;
+  // Met à jour le badge de notifications messages
+  mettreAJourNotificationMessages() {
+    if (!this.notifBadge) return;
     fetch('asset/PHP/get_messages_recus.php', { credentials: 'include' })
       .then(res => {
         if (!res.ok) throw new Error('Erreur réseau');
@@ -300,23 +206,165 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(data => {
         const totalNonLus = data.totalNonLus || 0;
         if (totalNonLus > 0) {
-          notifBadge.textContent = totalNonLus;
-          notifBadge.style.display = 'inline-block';
+          this.notifBadge.textContent = totalNonLus;
+          this.notifBadge.style.display = 'inline-block';
         } else {
-          notifBadge.style.display = 'none';
+          this.notifBadge.style.display = 'none';
         }
       })
       .catch(() => {
-        notifBadge.style.display = 'none';
+        this.notifBadge.style.display = 'none';
       });
   }
 
-  loadProfile();
+  // Actualise les crédits (externe)
+  async actualiserCredits() {
+    try {
+      const res = await fetch('asset/PHP/get_profile.php', { credentials: 'include' });
+      if (!res.ok) throw new Error('Erreur réseau');
+      const data = await res.json();
+      if (data.credits !== undefined) {
+        this.majCreditsUI(data.credits);
+      }
+    } catch (e) {
+      console.error('Erreur lors de l’actualisation des crédits', e);
+    }
+  }
 
-  window.actualiserCredits = actualiserCredits;
-});
+  // Gestion de la soumission du formulaire profil
+  async handleProfileSubmit(event) {
+    event.preventDefault();
 
-// Suppression de compte RGPD
+    if (!this.prenomInput?.value.trim() || !this.nomInput?.value.trim() || !this.emailInput?.value.trim()) {
+      alert('Veuillez remplir prénom, nom et email.');
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('prenom', this.prenomInput.value.trim());
+    fd.append('nom', this.nomInput.value.trim());
+    fd.append('email', this.emailInput.value.trim());
+    fd.append('bio', this.bioInput ? this.bioInput.value.trim() : '');
+    fd.append('roleConducteur', this.roleCondCheckbox && this.roleCondCheckbox.checked ? 1 : 0);
+    fd.append('rolePassager', this.rolePassCheckbox && this.rolePassCheckbox.checked ? 1 : 0);
+
+    if (this.roleCondCheckbox && this.roleCondCheckbox.checked) {
+      fd.append('profileMarqueVehicule', this.marqueVehiculeInput ? this.marqueVehiculeInput.value.trim() : '');
+      fd.append('profileModeleVehicule', this.modeleVehiculeInput ? this.modeleVehiculeInput.value.trim() : '');
+      fd.append('carburant', this.carburantSelect ? this.carburantSelect.value : 'essence');
+      fd.append('animaux', this.animauxCheckbox && this.animauxCheckbox.checked ? 1 : 0);
+      fd.append('fumeurs', this.fumeurCheckbox && this.fumeurCheckbox.checked ? 1 : 0);
+      fd.append('plaque', this.plaqueInput ? this.plaqueInput.value.trim() : '');
+      fd.append('couleur', this.couleurInput ? this.couleurInput.value.trim() : '');
+      fd.append('date_premiere_immatriculation', this.dateImmatInput ? this.dateImmatInput.value : '');
+    }
+    if (this.rolePassCheckbox && this.rolePassCheckbox.checked && this.preferencesInput && this.preferencesInput.value.trim()) {
+      fd.append('preferences', this.preferencesInput.value.trim());
+    }
+    if (this.avatarInput && this.avatarInput.files[0]) {
+      fd.append('avatar', this.avatarInput.files[0]);
+    }
+
+    try {
+      const res = await fetch('asset/PHP/update_profile.php', {
+        method: 'POST',
+        credentials: 'include',
+        body: fd
+      });
+      if (!res.ok) throw new Error('Erreur réseau');
+      const result = await res.json();
+      if (result.error) {
+        alert('Erreur enregistrement : ' + result.error);
+      } else {
+        alert('Profil mis à jour avec succès.');
+        if (result.avatarUrl && this.avatarPreview) {
+          this.setAvatar(this.avatarPreview, result.avatarUrl);
+        }
+        if (result.credits !== undefined) {
+          this.majCreditsUI(result.credits);
+        }
+      }
+    } catch (err) {
+      alert('Erreur réseau, impossible de mettre à jour.');
+      console.error('Erreur update profil:', err);
+    }
+  }
+
+  // Ouvre la modal changement mot de passe et réinitialise les champs
+  openChangePasswordModal() {
+    if (this.currentPasswordInput) this.currentPasswordInput.value = '';
+    if (this.newPasswordModalInput) this.newPasswordModalInput.value = '';
+    if (this.confirmNewPasswordModalInput) this.confirmNewPasswordModalInput.value = '';
+    if (this.modalErrorMsg) {
+      this.modalErrorMsg.textContent = '';
+      this.modalErrorMsg.style.display = 'none';
+    }
+    this.changePasswordModal.show();
+  }
+
+  // Gestion de la soumission du formulaire changement mot de passe
+  async handleChangePasswordSubmit(event) {
+    event.preventDefault();
+
+    const currentPwd = this.currentPasswordInput?.value.trim();
+    const newPwd = this.newPasswordModalInput?.value.trim();
+    const confirmNewPwd = this.confirmNewPasswordModalInput?.value.trim();
+
+    if (!currentPwd || !newPwd || !confirmNewPwd) {
+      this.showModalError('Veuillez remplir tous les champs.');
+      return;
+    }
+    if (newPwd !== confirmNewPwd) {
+      this.showModalError('Le nouveau mot de passe et sa confirmation ne correspondent pas.');
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('passwordConfirm', currentPwd);
+    fd.append('newPassword', newPwd);
+    fd.append('newPasswordConfirm', confirmNewPwd);
+
+    try {
+      const res = await fetch('asset/PHP/update_profile.php', {
+        method: 'POST',
+        credentials: 'include',
+        body: fd
+      });
+
+      if (!res.ok) throw new Error('Erreur réseau');
+      const result = await res.json();
+
+      if (result.error) {
+        this.showModalError(result.error);
+      } else {
+        alert('Mot de passe changé avec succès.');
+        this.changePasswordModal.hide();
+        this.changePasswordForm.reset();
+      }
+    } catch (err) {
+      this.showModalError('Erreur réseau, veuillez réessayer.');
+      console.error('Erreur changement mot de passe:', err);
+    }
+  }
+
+  // Affiche un message d'erreur dans la modal changement mot de passe
+  showModalError(message) {
+    if (!this.modalErrorMsg) return;
+    this.modalErrorMsg.textContent = message;
+    this.modalErrorMsg.style.display = 'block';
+  }
+
+  // Lance la mise à jour périodique des notifications messages
+  startNotificationInterval() {
+    this.mettreAJourNotificationMessages();
+    setInterval(() => this.mettreAJourNotificationMessages(), 30000);
+  }
+}
+
+// Instanciation et lancement
+const profileManager = new ProfileManager();
+
+// Suppression de compte RGPD (hors classe, car bouton hors scope DOMContentLoaded)
 const btnDeleteAccount = document.getElementById('btnDeleteAccount');
 if (btnDeleteAccount) {
   btnDeleteAccount.addEventListener('click', function () {

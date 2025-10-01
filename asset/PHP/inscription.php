@@ -6,7 +6,7 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 header('Content-Type: application/json');
-require_once __DIR__ . '/db_conn.php' // connexion PDO
+require_once __DIR__ . '/db_conn.php'; // connexion PDO
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode([

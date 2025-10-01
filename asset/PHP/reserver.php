@@ -9,12 +9,14 @@ if (!isset($_SESSION['user']['id'])) {
 }
 $userId = (int)$_SESSION['user']['id'];
 
+// Récupération et décodage des données JSON envoyées en POST
 $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) {
     http_response_code(400);
     echo json_encode(['error' => 'JSON invalide']);
     exit;
 }
+
 $trajetId = isset($input['trajet_id']) ? intval($input['trajet_id']) : 0;
 $places   = isset($input['places']) ? intval($input['places']) : 0;
 
@@ -31,7 +33,7 @@ try {
 
     $pdo->beginTransaction();
 
-    // Vérifier places restantes uniquement sur les réservations validées
+    // Verrouillage de la ligne trajet pour éviter les conditions de concurrence
     $sqlPlaces = "SELECT t.places - IFNULL(SUM(CASE WHEN r.statut = 'valide' THEN r.places_reservees ELSE 0 END), 0) AS places_restantes
                   FROM trajets t
                   LEFT JOIN reservations r ON r.trajet_id = t.id
@@ -48,6 +50,7 @@ try {
         echo json_encode(['error' => 'Trajet introuvable']);
         exit;
     }
+
     if ($places > (int)$placesRestantes) {
         $pdo->rollBack();
         http_response_code(400);
@@ -55,7 +58,7 @@ try {
         exit;
     }
 
-    // Vérifier si une demande ou réservation déjà en attente ou validée existe pour cet utilisateur et trajet
+    // Vérifier qu'il n'existe pas déjà une réservation ou demande en attente pour ce trajet et utilisateur
     $stmt = $pdo->prepare('SELECT COUNT(*) FROM reservations WHERE trajet_id = ? AND passager_id = ? AND statut IN ("en_attente", "valide")');
     $stmt->execute([$trajetId, $userId]);
     if ($stmt->fetchColumn() > 0) {
@@ -65,7 +68,7 @@ try {
         exit;
     }
 
-    // Insérer la réservation avec statut 'en_attente'
+    // Insertion de la nouvelle réservation avec statut 'en_attente'
     $stmtInsert = $pdo->prepare('INSERT INTO reservations (trajet_id, passager_id, places_reservees, statut) VALUES (?, ?, ?, ?)');
     $stmtInsert->execute([$trajetId, $userId, $places, 'en_attente']);
 
@@ -77,3 +80,4 @@ try {
     http_response_code(500);
     echo json_encode(['error' => 'Erreur serveur']);
 }
+

@@ -1,60 +1,81 @@
-document.addEventListener('DOMContentLoaded', () => {  
-  // Récupérer l'id utilisateur depuis l'URL
-  const params = new URLSearchParams(window.location.search);
-  const userId = params.get('id');
+class PublicProfileManager {
+  constructor() {
+    this.defaultAvatar = 'asset/Images/default_03.png';
 
-  if (!userId) {
-    alert("Profil introuvable : identifiant manquant.");
-    return;
+    // Récupérer l'id utilisateur depuis l'URL
+    const params = new URLSearchParams(window.location.search);
+    this.userId = params.get('id');
+
+    if (!this.userId) {
+      alert("Profil introuvable : identifiant manquant.");
+      return;
+    }
+
+    // Sélecteurs DOM
+    this.btnEnvoyerMessage = document.getElementById('openSendMessageModalBtn');
+    const modalEl = document.getElementById('sendMessageModal');
+    this.sendMessageModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+    this.sendMessageForm = document.getElementById('sendMessageForm');
+    this.modalMessageText = document.getElementById('modalMessageText');
+    this.modalMessageFeedback = document.getElementById('modalMessageFeedback');
+    this.avatarEl = document.getElementById('avatar');
+    this.pseudoEl = document.getElementById('pseudo');
+    this.prenomEl = document.getElementById('prenom');
+    this.bioEl = document.getElementById('bio');
+    this.roleEl = document.getElementById('role');
+    this.ancienneteEl = document.getElementById('anciennete');
+    this.nbTrajetsEl = document.getElementById('nbTrajets');
+    this.infosPlusEl = document.getElementById('infos-plus');
+    this.avisSection = document.getElementById('avis-section');
+    this.btnHistorique = document.getElementById('btn-historique-trajets');
+
+    // Création dynamique des éléments pour avis
+    this.btnDonnerAvis = document.createElement('button');
+    this.btnDonnerAvis.id = 'btnDonnerAvis';
+    this.btnDonnerAvis.className = 'btn btn-outline-primary mb-3';
+    this.btnDonnerAvis.textContent = 'Donner un avis';
+    this.btnDonnerAvis.style.display = 'none';
+
+    this.formulaireAvisContainer = document.createElement('div');
+    this.formulaireAvisContainer.id = 'formulaire-avis-container';
+
+    if (this.avisSection) {
+      this.avisSection.appendChild(this.btnDonnerAvis);
+      this.avisSection.appendChild(this.formulaireAvisContainer);
+    }
+
+    // Initialisation au chargement DOM
+    document.addEventListener('DOMContentLoaded', () => {
+      this.init();
+    });
   }
 
-  // Sélecteurs des éléments DOM dans la page profil
-  const btnEnvoyerMessage      = document.getElementById('openSendMessageModalBtn');
-  const sendMessageModal       = new bootstrap.Modal(document.getElementById('sendMessageModal'));
-  const sendMessageForm        = document.getElementById('sendMessageForm');
-  const modalMessageText       = document.getElementById('modalMessageText');
-  const modalMessageFeedback   = document.getElementById('modalMessageFeedback');
-  const avatarEl      = document.getElementById('avatar');
-  const pseudoEl      = document.getElementById('pseudo');
-  const prenomEl      = document.getElementById('prenom');
-  const bioEl         = document.getElementById('bio');
-  const roleEl        = document.getElementById('role');
-  const ancienneteEl  = document.getElementById('anciennete');
-  const nbTrajetsEl   = document.getElementById('nbTrajets');
-  const infosPlusEl   = document.getElementById('infos-plus');
-  const avisSection   = document.getElementById('avis-section');
-  const btnHistorique = document.getElementById('btn-historique-trajets');
-
-  // Met à jour dynamiquement le lien du bouton historique selon le profil affiché
-  if (btnHistorique && userId) {
-    btnHistorique.href = `HistoriqueConducteur.html?id=${userId}`;
+  init() {
+    this.setupHistoriqueLien();
+    this.loadProfileData();
+    this.setupSendMessageModal();
   }
 
-  // Création du bouton "Donner un avis" + container formulaire avis (ajoutés dynamiquement)
-  const btnDonnerAvis = document.createElement('button');
-  btnDonnerAvis.id = 'btnDonnerAvis';
-  btnDonnerAvis.className = 'btn btn-outline-primary mb-3';
-  btnDonnerAvis.textContent = 'Donner un avis';
-  btnDonnerAvis.style.display = 'none'; // caché par défaut
+  // Met à jour le lien du bouton historique
+  setupHistoriqueLien() {
+    if (this.btnHistorique && this.userId) {
+      this.btnHistorique.href = `HistoriqueConducteur.html?id=${this.userId}`;
+    }
+  }
 
-  const formulaireAvisContainer = document.createElement('div');
-  formulaireAvisContainer.id = 'formulaire-avis-container';
-
-  avisSection.appendChild(btnDonnerAvis);
-  avisSection.appendChild(formulaireAvisContainer);
-
-  const defaultAvatar = 'asset/Images/default_03.png';
-
-  function setAvatar(imgEl, avatarPath, altTxt) {
-    imgEl.src = avatarPath && avatarPath !== 'null' ? avatarPath : defaultAvatar;
+  // Définit l'avatar avec fallback
+  setAvatar(imgEl, avatarPath, altTxt) {
+    if (!imgEl) return;
+    imgEl.src = avatarPath && avatarPath !== 'null' ? avatarPath : this.defaultAvatar;
     imgEl.alt = altTxt || "Avatar utilisateur";
     imgEl.onerror = () => {
-      imgEl.src = defaultAvatar;
+      imgEl.src = this.defaultAvatar;
       imgEl.onerror = null;
     };
   }
 
-  function renderStars(moyenne, nbAvis = 0) {
+  // Génère un conteneur d'étoiles pour la note moyenne
+  renderStars(moyenne, nbAvis = 0) {
     const container = document.createElement('div');
     container.className = 'mb-2 d-flex align-items-center';
     const note = Math.round(Number(moyenne) * 2) / 2;
@@ -73,8 +94,9 @@ document.addEventListener('DOMContentLoaded', () => {
     return container;
   }
 
-  function creerFormulaireAvis(utilisateurId, dejaNote = false, noteUtilisateur = '', commentaireUtilisateur = '') {
-    formulaireAvisContainer.innerHTML = '';
+  // Crée et affiche le formulaire d'avis
+  creerFormulaireAvis(utilisateurId, dejaNote = false, noteUtilisateur = '', commentaireUtilisateur = '') {
+    this.formulaireAvisContainer.innerHTML = '';
 
     const form = document.createElement('form');
     form.id = 'formulaire-avis';
@@ -101,9 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
       <div id="avis-feedback" class="mt-2"></div>
     `;
 
-    formulaireAvisContainer.appendChild(form);
+    this.formulaireAvisContainer.appendChild(form);
 
-    // Gestion de la soumission du formulaire avis
     form.addEventListener('submit', e => {
       e.preventDefault();
       const note = form.querySelector('#note').value;
@@ -142,11 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Chargement des données utilisateur via AJAX
-  fetch(`asset/PHP/get_public_profile.php?id=${encodeURIComponent(userId)}`, {
-  credentials: 'include'
-})
-.then(res => res.json())
+  // Charge les données du profil utilisateur et met à jour l'interface
+  loadProfileData() {
+    fetch(`asset/PHP/get_public_profile.php?id=${encodeURIComponent(this.userId)}`, {
+      credentials: 'include'
+    })
+    .then(res => res.json())
     .then(data => {
       if (data.error) {
         alert(data.error);
@@ -154,109 +176,115 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Mise à jour des éléments du profil
-      setAvatar(avatarEl, data.avatar, `Avatar de ${data.prenom || ''} ${data.nom || ''}`);
-      pseudoEl.textContent = data.prenom || 'Utilisateur';
-      prenomEl.textContent = data.prenom || '';
-      bioEl.textContent = data.bio || "Cet utilisateur n'a pas encore ajouté de présentation.";
+      this.setAvatar(this.avatarEl, data.avatar, `Avatar de ${data.prenom || ''} ${data.nom || ''}`);
+      if (this.pseudoEl) this.pseudoEl.textContent = data.prenom || 'Utilisateur';
+      if (this.prenomEl) this.prenomEl.textContent = data.prenom || '';
+      if (this.bioEl) this.bioEl.textContent = data.bio || "Cet utilisateur n'a pas encore ajouté de présentation.";
 
       // Affichage note moyenne avec étoiles
-      if (data.moyenne_note && data.nb_avis > 0) {
-        const stars = renderStars(data.moyenne_note, data.nb_avis);
-        roleEl.parentNode.insertBefore(stars, roleEl);
+      if (data.moyenne_note && data.nb_avis > 0 && this.roleEl && this.roleEl.parentNode) {
+        const stars = this.renderStars(data.moyenne_note, data.nb_avis);
+        this.roleEl.parentNode.insertBefore(stars, this.roleEl);
       }
 
-      // Affichage du rôle (conducteur/passager)
-      if (data.roleConducteur && data.rolePassager) {
-        roleEl.textContent = 'Conducteur & Passager';
-      } else if (data.roleConducteur) {
-        roleEl.textContent = 'Conducteur';
-      } else if (data.rolePassager) {
-        roleEl.textContent = 'Passager';
-      } else {
-        roleEl.textContent = 'Membre';
-      }
-
-      ancienneteEl.textContent = data.anciennete || 'Membre depuis une date inconnue';
-
-      // Affichage du nombre de trajets terminés et total
-      if (data.nbTrajetsTermines !== undefined) {
-        const liTermines = document.createElement('li');
-        liTermines.textContent = `Trajets terminés : ${data.nbTrajetsTermines}`;
-        infosPlusEl.appendChild(liTermines);
-      }
-      if (data.nbTrajetsTotal !== undefined) {
-        const liTotal = document.createElement('li');
-        liTotal.textContent = `Total trajets proposés : ${data.nbTrajetsTotal}`;
-        infosPlusEl.appendChild(liTotal);
-      }
-
-      // Affichage des infos véhicule si conducteur
-      if (data.roleConducteur) {
-        if (data.marque_vehicule || data.modele_vehicule) {
-          const li = document.createElement('li');
-          let ligne = "";
-          if (data.marque_vehicule) ligne += "Marque : " + data.marque_vehicule;
-          if (data.modele_vehicule) ligne += (ligne ? ", " : "") + "Modèle : " + data.modele_vehicule;
-          li.textContent = ligne;
-          infosPlusEl.appendChild(li);
-        }
-        if (data.carburant) {
-          const li = document.createElement('li');
-          li.textContent = "Carburant : " + (data.carburant.charAt(0).toUpperCase() + data.carburant.slice(1));
-          infosPlusEl.appendChild(li);
-        }
-        if (data.couleur) {
-          const li = document.createElement('li');
-          li.textContent = "Couleur : " + data.couleur;
-          infosPlusEl.appendChild(li);
-        }
-        if (data.plaque) {
-          const li = document.createElement('li');
-          li.textContent = "Plaque d’immatriculation : " + data.plaque;
-          infosPlusEl.appendChild(li);
-        }
-        if (data.date_premiere_immatriculation) {
-          const li = document.createElement('li');
-          const d = new Date(data.date_premiere_immatriculation);
-          li.textContent = "Date 1re immatriculation : " +
-            (!isNaN(d) ? d.toLocaleDateString('fr-FR') : data.date_premiere_immatriculation);
-          infosPlusEl.appendChild(li);
+      // Affichage du rôle
+      if (this.roleEl) {
+        if (data.roleConducteur && data.rolePassager) {
+          this.roleEl.textContent = 'Conducteur & Passager';
+        } else if (data.roleConducteur) {
+          this.roleEl.textContent = 'Conducteur';
+        } else if (data.rolePassager) {
+          this.roleEl.textContent = 'Passager';
+        } else {
+          this.roleEl.textContent = 'Membre';
         }
       }
 
-      // Autres préférences
-      if (data.preferences) {
-        const li = document.createElement('li');
-        li.textContent = `Préférences : ${data.preferences}`;
-        infosPlusEl.appendChild(li);
-      }
-      if ('animaux' in data) {
-        const li = document.createElement('li');
-        li.textContent = (data.animaux === 1) ? "Animaux acceptés 🐾" : "Animaux refusés 🐾";
-        infosPlusEl.appendChild(li);
-      }
-      if ('fumeurs' in data) {
-        const li = document.createElement('li');
-        li.textContent = (data.fumeurs === 1) ? "Fumeurs acceptés 🚬" : "Pas de cigarette, svp 🚭";
-        infosPlusEl.appendChild(li);
+      if (this.ancienneteEl) this.ancienneteEl.textContent = data.anciennete || 'Membre depuis une date inconnue';
+
+      // Infos supplémentaires
+      if (this.infosPlusEl) {
+        this.infosPlusEl.innerHTML = ''; // reset
+
+        if (data.nbTrajetsTermines !== undefined) {
+          const liTermines = document.createElement('li');
+          liTermines.textContent = `Trajets terminés : ${data.nbTrajetsTermines}`;
+          this.infosPlusEl.appendChild(liTermines);
+        }
+        if (data.nbTrajetsTotal !== undefined) {
+          const liTotal = document.createElement('li');
+          liTotal.textContent = `Total trajets proposés : ${data.nbTrajetsTotal}`;
+          this.infosPlusEl.appendChild(liTotal);
+        }
+
+        if (data.roleConducteur) {
+          if (data.marque_vehicule || data.modele_vehicule) {
+            const li = document.createElement('li');
+            let ligne = "";
+            if (data.marque_vehicule) ligne += "Marque : " + data.marque_vehicule;
+            if (data.modele_vehicule) ligne += (ligne ? ", " : "") + "Modèle : " + data.modele_vehicule;
+            li.textContent = ligne;
+            this.infosPlusEl.appendChild(li);
+          }
+          if (data.carburant) {
+            const li = document.createElement('li');
+            li.textContent = "Carburant : " + (data.carburant.charAt(0).toUpperCase() + data.carburant.slice(1));
+            this.infosPlusEl.appendChild(li);
+          }
+          if (data.couleur) {
+            const li = document.createElement('li');
+            li.textContent = "Couleur : " + data.couleur;
+            this.infosPlusEl.appendChild(li);
+          }
+          if (data.plaque) {
+            const li = document.createElement('li');
+            li.textContent = "Plaque d’immatriculation : " + data.plaque;
+            this.infosPlusEl.appendChild(li);
+          }
+          if (data.date_premiere_immatriculation) {
+            const li = document.createElement('li');
+            const d = new Date(data.date_premiere_immatriculation);
+            li.textContent = "Date 1re immatriculation : " +
+              (!isNaN(d) ? d.toLocaleDateString('fr-FR') : data.date_premiere_immatriculation);
+            this.infosPlusEl.appendChild(li);
+          }
+        }
+
+        if (data.preferences) {
+          const li = document.createElement('li');
+          li.textContent = `Préférences : ${data.preferences}`;
+          this.infosPlusEl.appendChild(li);
+        }
+        if ('animaux' in data) {
+          const li = document.createElement('li');
+          li.textContent = (data.animaux === 1) ? "Animaux acceptés 🐾" : "Animaux refusés 🐾";
+          this.infosPlusEl.appendChild(li);
+        }
+        if ('fumeurs' in data) {
+          const li = document.createElement('li');
+          li.textContent = (data.fumeurs === 1) ? "Fumeurs acceptés 🚬" : "Pas de cigarette, svp 🚭";
+          this.infosPlusEl.appendChild(li);
+        }
       }
 
       // Réinitialisation avis section + ajout bouton + formulaire
-      avisSection.innerHTML = '';
-      avisSection.appendChild(btnDonnerAvis);
-      avisSection.appendChild(formulaireAvisContainer);
+      if (this.avisSection) {
+        this.avisSection.innerHTML = '';
+        this.avisSection.appendChild(this.btnDonnerAvis);
+        this.avisSection.appendChild(this.formulaireAvisContainer);
+      }
 
       // Affichage des derniers avis reçus
-      if (data.avis && Array.isArray(data.avis) && data.avis.length > 0) {
+      if (data.avis && Array.isArray(data.avis) && data.avis.length > 0 && this.avisSection) {
         const titre = document.createElement('h6');
         titre.textContent = "Derniers avis reçus :";
         titre.className = "mt-4 mb-2";
-        avisSection.appendChild(titre);
+        this.avisSection.appendChild(titre);
 
         data.avis.forEach(av => {
           const div = document.createElement('div');
           div.className = "mb-3 p-2 border rounded";
-          div.appendChild(renderStars(av.note));
+          div.appendChild(this.renderStars(av.note));
           if (av.commentaire) {
             const commentaire = document.createElement('div');
             commentaire.textContent = `"${av.commentaire}"`;
@@ -268,71 +296,84 @@ document.addEventListener('DOMContentLoaded', () => {
           info.textContent = `par ${av.auteur_prenom} • ${new Date(av.date).toLocaleDateString('fr-FR')}`;
           div.appendChild(info);
 
-          avisSection.appendChild(div);
+          this.avisSection.appendChild(div);
         });
       }
 
       // Afficher bouton "Donner un avis" si connecté et profil différent
-      if (data.isLoggedIn && String(data.currentUserId) !== String(userId)) {
-        btnDonnerAvis.style.display = 'inline-block';
-        btnDonnerAvis.onclick = () => {
-          btnDonnerAvis.style.display = 'none';
-          creerFormulaireAvis(userId, data.deja_note, data.note_utilisateur, data.commentaire_utilisateur);
+      if (data.isLoggedIn && String(data.currentUserId) !== String(this.userId)) {
+        this.btnDonnerAvis.style.display = 'inline-block';
+        this.btnDonnerAvis.onclick = () => {
+          this.btnDonnerAvis.style.display = 'none';
+          this.creerFormulaireAvis(this.userId, data.deja_note, data.note_utilisateur, data.commentaire_utilisateur);
         };
       }
-
-      // Gestion modal "Envoyer un message" (si existants)
-      if (btnEnvoyerMessage && sendMessageModal) {
-        btnEnvoyerMessage.onclick = () => {
-          modalMessageText.value = '';
-          modalMessageFeedback.textContent = '';
-          modalMessageFeedback.className = '';
-          sendMessageModal.show();
-        };
-      }
-
-      // Envoi du message via formulaire modal
-      if (sendMessageForm) {
-        sendMessageForm.addEventListener('submit', e => {
-          e.preventDefault();
-          const message = modalMessageText.value.trim();
-          modalMessageFeedback.textContent = '';
-          modalMessageFeedback.className = '';
-
-          if (!message) {
-            modalMessageFeedback.textContent = "Veuillez écrire un message.";
-            modalMessageFeedback.className = "text-danger";
-            return;
-          }
-
-          fetch('asset/PHP/envoyer_message.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ destinataire_id: userId, message })
-          })
-          .then(res => res.json())
-          .then(data => {
-            if (data.success) {
-              modalMessageFeedback.textContent = "Message envoyé !";
-              modalMessageFeedback.className = "text-success";
-              modalMessageText.value = '';
-              setTimeout(() => sendMessageModal.hide(), 1500);
-            } else {
-              modalMessageFeedback.textContent = data.error || "Erreur lors de l'envoi.";
-              modalMessageFeedback.className = "text-danger";
-            }
-          })
-          .catch(() => {
-            modalMessageFeedback.textContent = "Erreur réseau.";
-            modalMessageFeedback.className = "text-danger";
-          });
-        });
-      }
-
     })
     .catch(err => {
       console.error(err);
       alert("Erreur lors du chargement du profil.");
     });
-});
+  }
+
+  // Configure la modal d'envoi de message
+  setupSendMessageModal() {
+    if (this.btnEnvoyerMessage && this.sendMessageModal) {
+      this.btnEnvoyerMessage.onclick = () => {
+        if (this.modalMessageText) this.modalMessageText.value = '';
+        if (this.modalMessageFeedback) {
+          this.modalMessageFeedback.textContent = '';
+          this.modalMessageFeedback.className = '';
+        }
+        this.sendMessageModal.show();
+      };
+    }
+
+    if (this.sendMessageForm) {
+      this.sendMessageForm.addEventListener('submit', e => {
+        e.preventDefault();
+        this.handleSendMessageSubmit();
+      });
+    }
+  }
+
+  // Gestion de l'envoi du message via modal
+  handleSendMessageSubmit() {
+    if (!this.modalMessageText || !this.modalMessageFeedback) return;
+
+    const message = this.modalMessageText.value.trim();
+    this.modalMessageFeedback.textContent = '';
+    this.modalMessageFeedback.className = '';
+
+    if (!message) {
+      this.modalMessageFeedback.textContent = "Veuillez écrire un message.";
+      this.modalMessageFeedback.className = "text-danger";
+      return;
+    }
+
+    fetch('asset/PHP/envoyer_message.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ destinataire_id: this.userId, message })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        this.modalMessageFeedback.textContent = "Message envoyé !";
+        this.modalMessageFeedback.className = "text-success";
+        if (this.modalMessageText) this.modalMessageText.value = '';
+        setTimeout(() => this.sendMessageModal.hide(), 1500);
+      } else {
+        this.modalMessageFeedback.textContent = data.error || "Erreur lors de l'envoi.";
+        this.modalMessageFeedback.className = "text-danger";
+      }
+    })
+    .catch(() => {
+      this.modalMessageFeedback.textContent = "Erreur réseau.";
+      this.modalMessageFeedback.className = "text-danger";
+    });
+  }
+}
+
+// Instanciation et lancement
+const publicProfileManager = new PublicProfileManager();
