@@ -1,4 +1,9 @@
 <?php
+require_once './vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
 require __DIR__.'/config.php';
 
 header("Location: /PageDaccueil.html"); // ou /public/index.php selon ton projet
