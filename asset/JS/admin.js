@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
   // Vérification accès admin au chargement de la page
-  fetch('asset/PHP/check_admin.php', { credentials: "include" })
+  fetch('/PHP/check_admin.php', { credentials: "include" })
     .then(r => r.text())
     .then(txt => {
       if (txt.trim() === "") {
@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Chargement des membres avec filtres
   function chargerMembres() {
     tbodyUsers.innerHTML = "<tr><td colspan='9' class='text-center'>Chargement...</td></tr>";
-    fetchJson(`asset/PHP/admin_get_users.php?search=${encodeURIComponent(searchInput.value)}&role=${roleFilter.value}&statut=${statutFilter.value}`)
+    fetchJson(`/PHP/admin_get_users.php?search=${encodeURIComponent(searchInput.value)}&role=${roleFilter.value}&statut=${statutFilter.value}`)
       .then(data => {
         if (data.error) {
           tbodyUsers.innerHTML = `<tr><td colspan='9' class='text-danger text-center'>${data.error}</td></tr>`;
@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function chargerSignalements() {
     if (!tbodySignalements) return;
     tbodySignalements.innerHTML = `<tr><td colspan='8' class='text-center'>Chargement...</td></tr>`;
-    fetchJson('asset/PHP/get_signalements.php')
+    fetchJson('/PHP/get_signalements.php')
       .then(data => {
         if (data.error) {
           tbodySignalements.innerHTML = `<tr><td colspan='8' class='text-danger text-center'>${data.error}</td></tr>`;
@@ -135,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Chargement des statistiques / graphiques
   function chargerStats() {
-    fetchJson('asset/PHP/stats_covoiturage.php')
+    fetchJson('/PHP/stats_covoiturage.php')
       .then(data => {
         if(data.error){
           feedback.textContent = data.error;
@@ -201,7 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.adminToggleStatut = (id, current) => {
     if (!confirm(current === "actif" ? "Suspendre cet utilisateur ?" : "Réactiver cet utilisateur ?")) return;
-    fetchJson('asset/PHP/admin_toggle_statut.php', {
+    fetchJson('/PHP/admin_toggle_statut.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id })
@@ -219,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.adminResetPwd = id => {
     if (!confirm("Réinitialiser le mot de passe de cet utilisateur ?")) return;
-    fetchJson('asset/PHP/admin_reset_pwd.php', {
+    fetchJson('/PHP/admin_reset_pwd.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id })
@@ -240,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Mot de passe trop court.");
       return;
     }
-    fetchJson('asset/PHP/admin_set_pwd.php', {
+    fetchJson('/PHP/admin_set_pwd.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id, password: nvMdp })
@@ -258,7 +258,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.adminEditRole = id => {
     const nvRole = prompt("Entrer 'conducteur', 'passager', ou 'les deux' pour le nouveau rôle :", "");
     if (!nvRole) return;
-    fetchJson('asset/PHP/admin_edit_role.php', {
+    fetchJson('/PHP/admin_edit_role.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id, role: nvRole })
@@ -282,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Veuillez entrer un nombre positif.");
       return;
     }
-    fetchJson('asset/PHP/admin_update_jetons.php', {
+    fetchJson('/PHP/admin_update_jetons.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id, jetons: nv })
@@ -301,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Supprimer un signalement
   window.deleteSignalement = id => {
     if (!confirm("Supprimer ce signalement ?")) return;
-    fetchJson('asset/PHP/delete_signalement.php', {
+    fetchJson('/PHP/delete_signalement.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id })
@@ -325,7 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Marquer un signalement comme traité
   window.marquerCommeTraite = id => {
     if (!confirm("Marquer ce signalement comme traité ?")) return;
-    fetchJson('asset/PHP/traiter_signalement.php', {
+    fetchJson('/PHP/traiter_signalement.php', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ id })

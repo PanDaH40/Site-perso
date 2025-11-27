@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
     formData.append("password", password);
 
     // Envoi des données au serveur via fetch
-    fetch("asset/PHP/inscription.php", {
+    fetch("/PHP/inscription.php", {
       method: "POST",
       body: formData,
     })

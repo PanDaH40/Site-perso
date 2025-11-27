@@ -1,3 +1,4 @@
 # Ignorer la base de données
 .env
 htdocs
+.history

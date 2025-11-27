@@ -1,12 +1,20 @@
-# .htaccess à la racine du projet
+# Empêche d'afficher la structure des dossiers
 Options -Indexes
 
-# Bloquer l’accès aux fichiers sensibles
+# Bloquer fichiers sensibles (sécurité)
 <FilesMatch "^(Dockerfile|docker-compose\.yml|\.env|composer\.json|composer\.lock|package\.json|package-lock\.json|README\.md)$">
   Require all denied
 </FilesMatch>
 
-# Bloquer tous les fichiers commençant par un point (.env, .git, etc.)
+# Bloquer tous les fichiers cachés .*
 <FilesMatch "^\..+">
   Require all denied
 </FilesMatch>
+
+# Laisser passer HTML / JS / CSS normalement
+<FilesMatch "\.(html|js|css|png|jpg|jpeg|gif|webp|svg)$">
+    Require all granted
+</FilesMatch>
+
+# Aucune règle qui affecte les /PHP/*
+# On laisse le dossier PHP gérer sa config lui-même

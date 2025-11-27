@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
       formData.append("email", email);
       formData.append("password", password);
 
-      fetch("asset/PHP/connection.php", {
+      fetch("/PHP/connection.php", {
         method: "POST",
         body: formData,
         credentials: "include"
@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         forgotBtn.disabled = true;
 
-        fetch("asset/PHP/forgot_password.php", {
+        fetch("/PHP/forgot_password.php", {
           method: "POST",
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: email.trim() })
@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       submitBtn.disabled = true;
 
-      fetch("asset/PHP/reset_password.php", {
+      fetch("/PHP/reset_password.php", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, password })

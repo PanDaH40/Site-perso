@@ -1,0 +1,48 @@
+=== Nouvelle exécution : 2025-11-26T10:56:27+01:00 ===
+JSON REÇU: {"reservation_id":"318","action":"accepter"}
+RESERVATION FETCH:
+Array
+(
+    [trajet_id] => 99
+    [places_reservees] => 1
+    [statut] => en_attente
+    [conducteur_id] => 17
+    [places] => 10
+    [places_deja_reservees] => 0
+    [passager_id] => 16
+    [email] => admin_test@mail.com
+    [prenom] => Test
+)
+
+=== Nouvelle exécution : 2025-11-26T10:56:32+01:00 ===
+JSON REÇU: {"reservation_id":"318","action":"refuser"}
+RESERVATION FETCH:
+Array
+(
+    [trajet_id] => 99
+    [places_reservees] => 1
+    [statut] => valide
+    [conducteur_id] => 17
+    [places] => 10
+    [places_deja_reservees] => 1
+    [passager_id] => 16
+    [email] => admin_test@mail.com
+    [prenom] => Test
+)
+
+=== Nouvelle exécution : 2025-11-26T10:56:35+01:00 ===
+JSON REÇU: {"reservation_id":"318","action":"accepter"}
+RESERVATION FETCH:
+Array
+(
+    [trajet_id] => 99
+    [places_reservees] => 1
+    [statut] => valide
+    [conducteur_id] => 17
+    [places] => 10
+    [places_deja_reservees] => 1
+    [passager_id] => 16
+    [email] => admin_test@mail.com
+    [prenom] => Test
+)
+

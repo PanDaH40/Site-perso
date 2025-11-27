@@ -2,11 +2,11 @@
 declare(strict_types=1);
 
 $cfg = [
-  'host'   => 'sql309.infinityfree.com',
+  'host'   => 'ecoridt815.mysql.db',
   'port'   => 3306,
-  'db'     => 'if0_39505571_db_projet',
-  'user'   => 'if0_39505571',
-  'pass'   => 'qBOSjJTyyq5Trff',
+  'db'     => 'ecoridt815',
+  'user'   => 'ecoridt815',
+  'pass'   => 'Thebigdu40',
 ];
 
 $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $cfg['host'], $cfg['port'], $cfg['db']);
@@ -22,7 +22,8 @@ try {
     $pdo = new PDO($dsn, $cfg['user'], $cfg['pass'], $options);
 } catch (PDOException $e) {
     error_log('Erreur connexion BD: ' . $e->getMessage());
-    die('Erreur de connexion à la base de données.');
+    echo json_encode(['error' => 'Erreur de connexion à la base de données']);
+    exit;
 }
 
 

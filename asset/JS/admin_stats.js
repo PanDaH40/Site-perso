@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  fetch("asset/PHP/stats_covoiturage.php", { credentials: "include" })
+  fetch("/PHP/stats_covoiturage.php", { credentials: "include" })
     .then((res) => res.json())
     .then((data) => {
       if (!data || typeof data !== "object")

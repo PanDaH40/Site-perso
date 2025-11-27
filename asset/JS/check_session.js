@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     userStatus.textContent = "Vérification de la session...";
   }
 
-  fetch("asset/PHP/check_session.php", { credentials: "same-origin" })
+  fetch("/PHP/check_session.php", { credentials: "same-origin" })
     .then(res => {
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       return res.json();

@@ -139,7 +139,7 @@ class PublicProfileManager {
         return;
       }
 
-      fetch('asset/PHP/ajouter_avis.php', {
+      fetch('/PHP/ajouter_avis.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -165,7 +165,7 @@ class PublicProfileManager {
 
   // Charge les données du profil utilisateur et met à jour l'interface
   loadProfileData() {
-    fetch(`asset/PHP/get_public_profile.php?id=${encodeURIComponent(this.userId)}`, {
+    fetch(`/PHP/get_public_profile.php?id=${encodeURIComponent(this.userId)}`, {
       credentials: 'include'
     })
     .then(res => res.json())
@@ -277,7 +277,7 @@ class PublicProfileManager {
       // Affichage des derniers avis reçus
       if (data.avis && Array.isArray(data.avis) && data.avis.length > 0 && this.avisSection) {
         const titre = document.createElement('h6');
-        titre.textContent = "Derniers avis reçus :";
+        titre.textContent = "Derniers avis reçus:";
         titre.className = "mt-4 mb-2";
         this.avisSection.appendChild(titre);
 
@@ -350,7 +350,7 @@ class PublicProfileManager {
       return;
     }
 
-    fetch('asset/PHP/envoyer_message.php', {
+    fetch('/PHP/envoyer_message.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',

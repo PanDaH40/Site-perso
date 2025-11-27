@@ -10,7 +10,7 @@ function checkNewMessages() {
     return;
   }
 
-  fetch(`asset/PHP/get_messages_recus.php?key=${encodeURIComponent(accessKey)}`)
+  fetch(`/PHP/get_messages_recus.php?key=${encodeURIComponent(accessKey)}`)
     .then(r => {
       if (!r.ok) throw new Error(`HTTP error ${r.status}`);
       return r.json();

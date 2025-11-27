@@ -1,7 +1,7 @@
 <?php
 require __DIR__.'/config.php';
 
-header("Location: /PageDaccueil.html"); // ou /public/index.php selon ton projet
+header("Location: /PageDaccueil.html");
 exit;
 
 $host = getenv('DB_HOST') ?: 'db';

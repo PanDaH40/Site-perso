@@ -1,39 +1,71 @@
 <?php
-
 declare(strict_types=1);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
+
 require_once __DIR__ . '/db_conn.php';
 
-$userId = (int)($_SESSION['user']['id'] ?? 0);
-if ($userId <= 0) { echo json_encode(['error'=>'Non connecté']); exit; }
+// Vérifier connexion
+if (!isset($_SESSION['user']['id'])) {
+    echo json_encode(['error' => 'Non connecté']);
+    exit;
+}
 
-$in = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-$reservationId = (int)($in['reservation_id'] ?? 0);
-$note = isset($in['note']) ? (int)$in['note'] : null;
-$avis = trim((string)($in['avis'] ?? ''));
+$auteurId = (int)$_SESSION['user']['id'];
 
-if ($reservationId <= 0 || $note === null || $note < 1 || $note > 5) {
-  echo json_encode(['error'=>'Paramètres invalides']); exit;
+// Lire JSON
+$in = json_decode(file_get_contents('php://input'), true);
+
+$utilisateurId = (int)($in['utilisateur_id'] ?? 0);
+$note = (int)($in['note'] ?? 0);
+$commentaire = trim((string)($in['commentaire'] ?? ''));
+
+// Validation
+if ($utilisateurId <= 0 || $note < 1 || $note > 5) {
+    echo json_encode(['error' => 'Paramètres invalides']);
+    exit;
+}
+
+if ($utilisateurId === $auteurId) {
+    echo json_encode(['error' => "Impossible de s’auto-noter"]);
+    exit;
 }
 
 try {
-  // Le passager qui laisse l’avis doit être le propriétaire de la réservation
-  $stmt = $pdo->prepare("SELECT passager_id FROM reservations WHERE id=? LIMIT 1");
-  $stmt->execute([$reservationId]);
-  $passager = (int)$stmt->fetchColumn();
-  if ($passager !== $userId) { echo json_encode(['error'=>'Accès refusé']); exit; }
+    // Vérifie si l'utilisateur a déjà laissé un avis
+    $stmt = $pdo->prepare("
+        SELECT id 
+        FROM avis 
+        WHERE utilisateur_id = ? AND auteur_id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$utilisateurId, $auteurId]);
+    $existing = $stmt->fetchColumn();
 
-  $stmt = $pdo->prepare("UPDATE reservations
-    SET note = ?, avis = ?, avis_valide = 0, date_validation = NULL
-    WHERE id = ?");
-  $stmt->execute([$note, $avis !== '' ? $avis : null, $reservationId]);
+    if ($existing) {
+        // Mise à jour
+        $stmt = $pdo->prepare("
+            UPDATE avis 
+            SET note = ?, commentaire = ?, date = NOW() 
+            WHERE id = ?
+        ");
+        $stmt->execute([$note, $commentaire !== '' ? $commentaire : null, $existing]);
+    } else {
+        // Insertion
+        $stmt = $pdo->prepare("
+            INSERT INTO avis (utilisateur_id, auteur_id, note, commentaire, date)
+            VALUES (?, ?, ?, ?, NOW())
+        ");
+        $stmt->execute([$utilisateurId, $auteurId, $note, $commentaire !== '' ? $commentaire : null]);
+    }
 
-  echo json_encode(['success'=>true]);
+    echo json_encode(['success' => true]);
+
 } catch (Throwable $e) {
-  error_log('ajouter_avis: '.$e->getMessage());
-  echo json_encode(['error'=>'Erreur serveur']);
+    error_log("Erreur ajouter_avis: " . $e->getMessage());
+    echo json_encode(['error' => 'Erreur serveur']);
 }
+
 
 
 

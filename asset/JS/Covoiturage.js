@@ -1,6 +1,6 @@
 class TrajetsManager {
   constructor() {
-    this.basePath = '/asset/PHP/';
+    this.basePath = '/PHP/';
     this.LIST_ENDPOINT = 'trajets.php';
     this.ADD_ENDPOINT = 'trajets.php';
     this.lastTrajetsListe = [];
@@ -275,26 +275,36 @@ class TrajetsManager {
         if (Array.isArray(data.all_trajets) && data.all_trajets.length > 0) {
           this.afficherTrajets(data.all_trajets);
         } else if (data.date_alternative) {
-          this.afficherAucunTrajet();
-          if (dateAltMsg) {
-            dateAltMsg.style.display = "block";
-            dateAltMsg.innerHTML = `
-              Aucun trajet disponible à cette date.<br>
-              Essayez plutôt le <a href="#" id="changerDateAlternative">${data.date_alternative}</a>.
-            `;
-            const lienDateAlt = document.getElementById("changerDateAlternative");
-            if (lienDateAlt) {
-              lienDateAlt.addEventListener("click", (e) => {
-                e.preventDefault();
-                const parts = data.date_alternative.split('/');
-                if(parts.length === 3) {
-                  const dateFormatee = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-                  document.getElementById("searchDate").value = dateFormatee;
-                  this.rechercherTrajets();
-                }
-              });
-            }
-          }
+        this.afficherAucunTrajet();
+        if (dateAltMsg) {
+          dateAltMsg.style.display = "block";
+          dateAltMsg.innerHTML = `
+          Aucun trajet disponible à cette date.<br>
+          Essayez plutôt le <a href="#" id="changerDateAlternative">${data.date_alternative}</a>.
+        `;
+
+    const lienDateAlt = document.getElementById("changerDateAlternative");
+    if (lienDateAlt) {
+    lienDateAlt.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    // date au format FR venant du backend : DD/MM/YYYY
+    const fr = data.date_alternative; // "28/11/2025"
+
+    // Conversion en ISO pour l’input HTML
+    const [j, m, a] = fr.split('/');
+    const iso = `${a}-${m.padStart(2,'0')}-${j.padStart(2,'0')}`;
+
+    // 1️⃣ On met la date ISO dans le champ input (obligatoire)
+    document.getElementById("searchDate").value = iso;
+
+    // 2️⃣ On recherche AVEC la date ISO (compatible backend)
+    this.rechercherTrajets();
+    });
+  }
+}
+
+
         } else {
           this.afficherAucunTrajet();
         }
@@ -331,7 +341,6 @@ class TrajetsManager {
       .then(data => {
         if (data.success) {
           document.getElementById("trajetForm")?.reset();
-          this.rechercherTrajets();
         } else {
           alert(data.error || "Erreur lors de l'ajout du trajet !");
         }

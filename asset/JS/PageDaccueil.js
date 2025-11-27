@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const basePath = '/asset/PHP/';
+  const basePath = '/PHP/';
+
   const userStatus = document.getElementById("userStatus");
   const logoutBtn = document.getElementById("logoutBtn");
   const loginBtn = document.getElementById("loginBtn");
@@ -8,53 +9,66 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnMessages = document.getElementById("btnMessages");
   const notifMessages = document.getElementById("notif-messages");
   const notifBadge = document.getElementById("notif-badge");
-  const form = document.getElementById("searchForm");
-  const resetBtn = document.getElementById("resetFilters");
   const adminBtn = document.getElementById("btn-admin");
 
-  // Fonctions utilisateur connecté/déconnecté
+  const form = document.getElementById("searchForm");
+  const resetBtn = document.getElementById("resetFilters");
+
+  /* ----------------------------------------------------
+     MASQUER ÉLÉMENTS SI NON CONNECTÉ
+  ---------------------------------------------------- */
   function masquerElementsUtilisateur() {
-    if (logoutBtn) logoutBtn.classList.add("d-none");
-    if (dashboardBtn) dashboardBtn.classList.add("d-none");
-    if (btnProfil) btnProfil.style.display = "none";
-    if (btnMessages) btnMessages.style.display = "none";
-    if (notifMessages) notifMessages.style.display = "none";
-    if (notifBadge) notifBadge.style.display = "none";
-    if (adminBtn) adminBtn.style.display = "none";
-  }
-  function afficherElementsUtilisateur() {
-    if (logoutBtn) logoutBtn.classList.remove("d-none");
-    if (dashboardBtn) dashboardBtn.classList.remove("d-none");
-    if (btnProfil) btnProfil.style.display = "";
-    if (btnMessages) btnMessages.style.display = "";
-    if (notifMessages) notifMessages.style.display = "inline-block";
+    logoutBtn?.classList.add("d-none");
+    dashboardBtn?.classList.add("d-none");
+    btnProfil?.classList.add("d-none");
+    btnMessages?.classList.add("d-none");
+    notifMessages?.classList.add("d-none");
+    notifBadge?.classList.add("d-none");
+    adminBtn?.classList.add("d-none");
   }
 
-  // Gestion session utilisateur
-  fetch(basePath + "check_session.php", { credentials: "same-origin" })
+  /* ----------------------------------------------------
+     AFFICHER ÉLÉMENTS SI CONNECTÉ
+  ---------------------------------------------------- */
+  function afficherElementsUtilisateur() {
+    logoutBtn?.classList.remove("d-none");
+    dashboardBtn?.classList.remove("d-none");
+    btnProfil?.classList.remove("d-none");
+    btnMessages?.classList.remove("d-none");
+    notifMessages?.classList.remove("d-none");
+  }
+
+  /* ----------------------------------------------------
+     CHECK SESSION
+  ---------------------------------------------------- */
+  fetch(basePath + "check_session.php", { credentials: "include" })
     .then(res => res.json())
     .then(data => {
+      console.log("Session:", data);
+
       if (data.connected) {
         userStatus.textContent = `Connecté en tant que ${data.user.prenom}`;
         userStatus.classList.remove("text-muted");
         userStatus.classList.add("text-success");
-        if (loginBtn) loginBtn.classList.add("d-none");
+
+        loginBtn?.classList.add("d-none");
+
         afficherElementsUtilisateur();
         mettreAJourNotificationMessages();
 
         // Afficher bouton admin si admin == 1
         if (adminBtn) {
           if (data.user.admin == 1) {
-            adminBtn.style.display = "";
+            adminBtn.classList.remove("d-none");
           } else {
-            adminBtn.style.display = "none";
+            adminBtn.classList.add("d-none");
           }
         }
+
       } else {
         userStatus.textContent = "Non connecté";
-        userStatus.classList.remove("text-success");
-        userStatus.classList.add("text-muted");
-        if (loginBtn) loginBtn.classList.remove("d-none");
+        userStatus.classList.replace("text-success", "text-muted");
+        loginBtn?.classList.remove("d-none");
         masquerElementsUtilisateur();
       }
     })
@@ -62,45 +76,28 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Erreur session:", err);
       userStatus.textContent = "Erreur session";
       userStatus.classList.add("text-danger");
-      if (loginBtn) loginBtn.classList.remove("d-none");
+      loginBtn?.classList.remove("d-none");
       masquerElementsUtilisateur();
     });
 
+  /* ----------------------------------------------------
+     FORMULAIRE DE RECHERCHE
+  ---------------------------------------------------- */
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
       form.reset();
     });
   }
 
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      fetch(basePath + "logout.php", {
-        method: "POST",
-        credentials: "same-origin"
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            location.reload();
-          } else {
-            alert("Erreur lors de la déconnexion.");
-          }
-        })
-        .catch(err => {
-          console.error("Erreur logout:", err);
-          alert("Erreur lors de la déconnexion.");
-        });
-    });
-  }
-
-  // *** Ici, on fait juste une redirection avec les filtres ***
   if (form) {
     form.addEventListener("submit", e => {
       e.preventDefault();
+
       const depart = document.getElementById("departure").value.trim();
       const arrivee = document.getElementById("arrival").value.trim();
       const date = document.getElementById("date").value;
       let places = document.getElementById("passengers").value;
+
       if (places === "4+") places = "4";
 
       if (!depart || !arrivee || !date || !places) {
@@ -108,11 +105,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Construction de l’URL avec les paramètres GET
       const params = new URLSearchParams({
-        depart: depart,
-        arrivee: arrivee,
-        date: date,
+        depart,
+        arrivee,
+        date,
         places_min: places
       }).toString();
 
@@ -120,9 +116,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Badge notifications messages (inutile pour recherche, mais gardé pour ton header)
+  /* ----------------------------------------------------
+     DÉCONNEXION
+  ---------------------------------------------------- */
+  logoutBtn?.addEventListener("click", () => {
+    fetch(basePath + "logout.php", {
+      method: "POST",
+      credentials: "include"
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          location.reload();
+        } else {
+          alert("Erreur lors de la déconnexion.");
+        }
+      })
+      .catch(() => alert("Erreur lors de la déconnexion."));
+  });
+
+  /* ----------------------------------------------------
+     NOTIFICATIONS MESSAGES
+  ---------------------------------------------------- */
   function mettreAJourNotificationMessages() {
     if (!notifBadge) return;
+
     fetch(basePath + 'get_messages_recus.php', { credentials: 'include' })
       .then(res => {
         if (!res.ok) throw new Error('Erreur réseau');
@@ -130,19 +148,13 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .then(data => {
         const totalNonLus = data.totalNonLus || 0;
-        if (totalNonLus > 0) {
-          notifBadge.textContent = totalNonLus;
-          notifBadge.style.display = 'inline-block';
-        } else {
-          notifBadge.style.display = 'none';
-        }
+        notifBadge.textContent = totalNonLus;
+        notifBadge.style.display = totalNonLus > 0 ? "inline-block" : "none";
       })
       .catch(() => {
-        notifBadge.style.display = 'none';
+        notifBadge.style.display = "none";
       });
   }
 
   setInterval(mettreAJourNotificationMessages, 30000);
-
-  // Pas d'affichage de trajets sur cette page : tout se fait sur PageCovoiturage.html
 });

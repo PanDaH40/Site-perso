@@ -1,48 +1,86 @@
 <?php
-// Validation d'une demande de réservation : 
-// -> prélève 2 jetons commission + prix du trajet au passager, crédite le conducteur
-// -> envoie un mail au passager pour l'informer
-
+// ----------------------------------------
+// Mode développeur : logs & erreurs
+// ----------------------------------------
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+$logFile = __DIR__ . '/debug_valider.txt';
+file_put_contents($logFile, "=== Nouvelle exécution : ".date('c')." ===\n", FILE_APPEND);
+
+// ----------------------------------------
+// SESSION
+// ----------------------------------------
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
+// Vérification connexion
 if (!isset($_SESSION['user']['id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Utilisateur non connecté']);
+    file_put_contents($logFile, "ERREUR: utilisateur non connecté\n\n", FILE_APPEND);
     exit;
 }
+
 $userId = (int)$_SESSION['user']['id'];
 
-$input = json_decode(file_get_contents('php://input'), true);
-if (!is_array($input)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'JSON invalide']);
-    exit;
+// ----------------------------------------
+// Lecture JSON OU FormData
+// ----------------------------------------
+$raw = file_get_contents("php://input");
+$input = json_decode($raw, true);
+
+file_put_contents($logFile, "RAW INPUT: $raw\n", FILE_APPEND);
+
+if (is_array($input)) {
+    $reservationId = intval($input['reservation_id'] ?? 0);
+    $action        = $input['action'] ?? '';
+} else {
+    $reservationId = intval($_POST['reservation_id'] ?? 0);
+    $action        = $_POST['action'] ?? '';
 }
 
-$reservationId = isset($input['reservation_id']) ? intval($input['reservation_id']) : 0;
-$action = isset($input['action']) ? $input['action'] : '';
+file_put_contents(
+    $logFile,
+    "DÉCODÉ → reservationId=$reservationId | action=$action\n",
+    FILE_APPEND
+);
 
+// Vérification paramètres
 if ($reservationId <= 0 || !in_array($action, ['accepter', 'refuser'], true)) {
     http_response_code(400);
     echo json_encode(['error' => 'Paramètres invalides']);
+    file_put_contents($logFile, "ERREUR: paramètres invalides\n\n", FILE_APPEND);
+    exit;
+}
+
+// ----------------------------------------
+// Connexion BD
+// ----------------------------------------
+require_once __DIR__ . '/db_conn.php';
+if (!isset($pdo) || !$pdo instanceof PDO) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Erreur serveur']);
+    file_put_contents($logFile, "ERREUR: \$pdo est NULL\n\n", FILE_APPEND);
     exit;
 }
 
 try {
-    require_once __DIR__ . '/db_conn.php';
-
     $pdo->beginTransaction();
 
+    // ----------------------------------------
+    // Récupération de la réservation
+    // ----------------------------------------
     $stmt = $pdo->prepare("
-        SELECT r.trajet_id, r.places_reservees, r.statut, t.conducteur_id, t.places,
-            (SELECT COALESCE(SUM(CASE WHEN statut = 'valide' THEN places_reservees ELSE 0 END),0) FROM reservations WHERE trajet_id = t.id) AS places_deja_reservees,
-            r.passager_id,
-            i.email, i.prenom
+        SELECT r.trajet_id, r.places_reservees, r.statut,
+               t.conducteur_id, t.places,
+               (SELECT COALESCE(SUM(CASE WHEN statut='valide' 
+                         THEN places_reservees ELSE 0 END),0)
+                FROM reservations WHERE trajet_id = t.id) AS places_deja_reservees,
+               r.passager_id,
+               i.email, i.prenom,
+               t.jetons
         FROM reservations r
         JOIN trajets t ON r.trajet_id = t.id
         JOIN inscrits i ON r.passager_id = i.id
@@ -52,6 +90,8 @@ try {
     $stmt->execute([$reservationId]);
     $res = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    file_put_contents($logFile, "RESERVATION FETCH:\n".print_r($res, true)."\n", FILE_APPEND);
+
     if (!$res) {
         $pdo->rollBack();
         http_response_code(404);
@@ -59,10 +99,12 @@ try {
         exit;
     }
 
-    if ($res['conducteur_id'] !== $userId) {
+    // Vérifier autorisation
+    if ($res['conducteur_id'] != $userId) {
         $pdo->rollBack();
         http_response_code(403);
         echo json_encode(['error' => 'Accès refusé']);
+        file_put_contents($logFile, "ERREUR: conducteur {$res['conducteur_id']} != user $userId\n\n", FILE_APPEND);
         exit;
     }
 
@@ -73,76 +115,89 @@ try {
         exit;
     }
 
-    $mailSubject = '';
-    $mailMessage = '';
-
+    // ----------------------------------------
+    // ACTION : ACCEPTER
+    // ----------------------------------------
     if ($action === 'accepter') {
+
         $places_restantes = $res['places'] - $res['places_deja_reservees'];
+
         if ($res['places_reservees'] > $places_restantes) {
             $pdo->rollBack();
-            echo json_encode(['error' => 'Pas assez de places disponibles pour valider cette réservation']);
+            echo json_encode(['error' => 'Pas assez de places disponibles']);
             exit;
         }
 
-        $stmtJetons = $pdo->prepare("SELECT jetons FROM trajets WHERE id = ?");
-        $stmtJetons->execute([$res['trajet_id']]);
-        $jetons_trajet = (int)$stmtJetons->fetchColumn();
+        // Crédit du passager
+        $stmtC = $pdo->prepare("SELECT credits FROM inscrits WHERE id = ?");
+        $stmtC->execute([$res['passager_id']]);
+        $credits = (int)$stmtC->fetchColumn();
 
-        $stmtCredits = $pdo->prepare("SELECT credits FROM inscrits WHERE id = ?");
-        $stmtCredits->execute([$res['passager_id']]);
-        $credits = (int)$stmtCredits->fetchColumn();
+        $total = 2 + (int)$res['jetons']; // marge + prix
 
-        $total_a_deduire = 2 + $jetons_trajet;
-
-        if ($credits < $total_a_deduire) {
+        if ($credits < $total) {
             $pdo->rollBack();
-            echo json_encode(['error' => 'Crédits insuffisants pour confirmer la réservation']);
+            echo json_encode(['error' => 'Crédits insuffisants']);
             exit;
         }
 
-        $stmtUpdate = $pdo->prepare("UPDATE reservations SET statut = 'valide' WHERE id = ?");
-        $stmtUpdate->execute([$reservationId]);
+        // Validation
+        $pdo->prepare("UPDATE reservations SET statut='valide' WHERE id=?")
+            ->execute([$reservationId]);
 
-        $stmtDeductCredits = $pdo->prepare("UPDATE inscrits SET credits = credits - ? WHERE id = ?");
-        $stmtDeductCredits->execute([$total_a_deduire, $res['passager_id']]);
+        // Débit passager
+        $pdo->prepare("UPDATE inscrits SET credits = credits - ? WHERE id=?")
+            ->execute([$total, $res['passager_id']]);
 
-        $stmtAddCredits = $pdo->prepare("UPDATE inscrits SET credits = credits + ? WHERE id = ?");
-        $stmtAddCredits->execute([$jetons_trajet, $res['conducteur_id']]);
+        // Crédit conducteur
+        $pdo->prepare("UPDATE inscrits SET credits = credits + ? WHERE id=?")
+            ->execute([(int)$res['jetons'], $userId]);
 
-        $mailSubject = "Votre réservation a été acceptée";
-        $mailMessage = "Bonjour " . $res['prenom'] . ",\n\n"
-                     . "Votre réservation pour le trajet a été acceptée par le conducteur.\n"
-                     . "Merci d'utiliser notre service.\n\nL'équipe EcoRide";
+        $subject = "Votre réservation a été acceptée";
+        $message = "Bonjour {$res['prenom']},\nVotre réservation a été acceptée.\nEcoRide";
 
-    } else { // action = 'refuser'
-        $stmtUpdate = $pdo->prepare("UPDATE reservations SET statut = 'annule' WHERE id = ?");
-        $stmtUpdate->execute([$reservationId]);
+    }
 
-        $mailSubject = "Votre réservation a été refusée";
-        $mailMessage = "Bonjour " . $res['prenom'] . ",\n\n"
-                     . "Malheureusement, votre demande de réservation a été refusée par le conducteur.\n"
-                     . "Vous ne serez pas débité.\n\nL'équipe EcoRide";
+    // ----------------------------------------
+    // ACTION : REFUSER
+    // ----------------------------------------
+    else {
+        $pdo->prepare("UPDATE reservations SET statut='annule' WHERE id=?")
+            ->execute([$reservationId]);
+
+        $subject = "Votre réservation a été refusée";
+        $message = "Bonjour {$res['prenom']},\nVotre demande a été refusée.\nEcoRide";
     }
 
     $pdo->commit();
 
-    // Envoi du mail
-    $to = $res['email'];
-    $headers = "From: no-reply@ecoride.example.com\r\nContent-Type: text/plain; charset=UTF-8\r\n";
-    mail($to, $mailSubject, $mailMessage, $headers);
+    // Envoi email
+    @mail(
+        $res['email'],
+        $subject,
+        $message,
+        "From: no-reply@ecoride.example.com\r\nContent-Type: text/plain; charset=UTF-8\r\n"
+    );
 
-    echo json_encode(['success' => true, 'message' => 'Réservation ' . ($action === 'accepter' ? 'acceptée' : 'refusée')]);
-    exit;
+    echo json_encode(['success' => true]);
 
-} catch (PDOException $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    error_log('Erreur serveur valider_reservation.php : ' . $e->getMessage());
+} catch (Throwable $e) {
+
+    if ($pdo->inTransaction()) $pdo->rollBack();
+
+    file_put_contents($logFile,
+        "EXCEPTION: ".$e->getMessage()."\n".$e->getTraceAsString()."\n\n",
+        FILE_APPEND
+    );
+
     http_response_code(500);
     echo json_encode(['error' => 'Erreur serveur']);
-    exit;
 }
+
+?>
+
+
+
 
 
 

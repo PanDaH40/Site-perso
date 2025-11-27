@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
    * Charge et affiche la liste des conversations avec badges de messages non lus
    */
   function chargerConversations() {
-    fetch('asset/PHP/get_messages_recus.php')
+    fetch('/PHP/get_messages_recus.php')
       .then(res => {
         if (!res.ok) throw new Error('Erreur réseau');
         return res.json();
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    fetch('asset/PHP/get_messages.php?with=' + encodeURIComponent(userId))
+    fetch('/PHP/get_messages.php?with=' + encodeURIComponent(userId))
       .then(res => {
         if (!res.ok) throw new Error('Erreur réseau');
         return res.json();
@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      fetch('asset/PHP/envoyer_message.php', {
+      fetch('/PHP/envoyer_message.php', {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ destinataire_id: destinataire, message })

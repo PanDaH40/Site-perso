@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 1. Charger les infos du conducteur (prénom, photo)
-  fetch(`asset/PHP/get_public_profile.php?id=${encodeURIComponent(conducteurId)}`)
+  fetch(`/PHP/get_public_profile.php?id=${encodeURIComponent(conducteurId)}`)
     .then(res => res.json())
     .then(data => {
       if (data.error) {
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
   // 2. Charger l'historique des trajets terminés du conducteur
-  fetch(`asset/PHP/historique_conducteur.php?id=${encodeURIComponent(conducteurId)}`)
+  fetch(`/PHP/historique_conducteur.php?id=${encodeURIComponent(conducteurId)}`)
     .then(res => res.json())
     .then(data => {
       // Réinitialise l’affichage

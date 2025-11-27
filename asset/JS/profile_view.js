@@ -22,7 +22,7 @@ function getUserIdFromUrl() {
 
 async function chargerProfilUtilisateur(userId) {
   try {
-    const res = await fetch(`asset/PHP/get_profile.php?id=${encodeURIComponent(userId)}`, { credentials: 'include' });
+    const res = await fetch(`/PHP/get_profile.php?id=${encodeURIComponent(userId)}`, { credentials: 'include' });
     const data = await res.json();
 
     if (data.error) {
@@ -71,7 +71,7 @@ async function sauverProfil(userId) {
   }
 
   try {
-    const res = await fetch('asset/PHP/update_profile.php', {
+    const res = await fetch('/PHP/update_profile.php', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },

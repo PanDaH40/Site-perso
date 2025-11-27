@@ -11,13 +11,13 @@ if (!isset($_SESSION['user']['admin']) || $_SESSION['user']['admin'] != 1) {
 try {
     require_once __DIR__ . '/db_conn.php';
 
-    // Générer la liste des 30 derniers jours (format YYYY-MM-DD)
+    // Liste des 30 derniers jours (YYYY-MM-DD)
     $dates = [];
     for ($i = 29; $i >= 0; $i--) {
         $dates[] = date('Y-m-d', strtotime("-$i days"));
     }
 
-    // Nombre de trajets par jour sur les 30 derniers jours
+    // Trajets par jour
     $stmt1 = $pdo->prepare("
         SELECT DATE(date) AS jour, COUNT(*) AS nb_trajets
         FROM trajets
@@ -28,26 +28,27 @@ try {
     $stmt1->execute();
     $rawTrajets = $stmt1->fetchAll(PDO::FETCH_KEY_PAIR);
 
-    // Crédits gagnés par jour (trajets terminés) sur 30 derniers jours
+    // Commission : 2 jetons par trajet terminé
     $stmt2 = $pdo->prepare("
-        SELECT DATE(date) AS jour, SUM(jetons) AS credits_gagnes
+        SELECT DATE(date) AS jour, COUNT(*) * 2 AS credit_gagnes
         FROM trajets
-        WHERE etat_trajet = 'termine' AND date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        WHERE etat_trajet = 'termine'
+          AND date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
         GROUP BY DATE(date)
         ORDER BY DATE(date)
     ");
     $stmt2->execute();
     $rawCredits = $stmt2->fetchAll(PDO::FETCH_KEY_PAIR);
 
-    // Total crédits gagnés (sur tous les trajets terminés)
+    // Total crédits gagnés par le site
     $stmt3 = $pdo->query("
-        SELECT SUM(jetons) AS total_credits
+        SELECT COUNT(*) * 2 AS total_credits
         FROM trajets
         WHERE etat_trajet = 'termine'
     ");
-    $totalCredits = $stmt3->fetchColumn() ?: 0;
+    $totalCredits = (float)($stmt3->fetchColumn() ?: 0);
 
-    // Construire les séries complètes alignées sur les dates
+    // Mise en forme finale
     $trajetsParJour = [];
     $creditsParJour = [];
 
@@ -56,9 +57,10 @@ try {
             'jour' => $date,
             'nb_trajets' => isset($rawTrajets[$date]) ? (int)$rawTrajets[$date] : 0
         ];
+
         $creditsParJour[] = [
             'jour' => $date,
-            'credits_gagnes' => isset($rawCredits[$date]) ? (float)$rawCredits[$date] : 0
+            'credit_gagnes' => isset($rawCredits[$date]) ? (float)$rawCredits[$date] : 0
         ];
     }
 
@@ -66,12 +68,12 @@ try {
         'dates' => $dates,
         'trajets_par_jour' => $trajetsParJour,
         'credits_par_jour' => $creditsParJour,
-        'total_credits' => (float)$totalCredits,
+        'total_credits' => $totalCredits
     ]);
     exit;
+
 } catch (Exception $e) {
     http_response_code(500);
-    // En prod, remplacer 'debug' par un message générique
     echo json_encode(['error' => 'Erreur serveur', 'debug' => $e->getMessage()]);
     exit;
 }
